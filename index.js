@@ -52,7 +52,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
       console.log(`Authenticated user: ${decoded.nick}`);
       socket.send('Authenticated');
 
-      socket.on('message', (message) => {
+      socket.on('message', (data) => {
         console.log(`Received: ${message}`);
         socket.send(`Hello, ${decoded.nick}`);
       });
