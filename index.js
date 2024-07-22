@@ -30,7 +30,7 @@ app.use(cookieParser());
 
 const server = new WebSocket.Server({ host: host, port: 8080 });
 
-server.on('connection', (socket) => {
+server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
   console.log('Client connected');
 
   socket.on('message', (message) => {
