@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby Super Trunfo Sat</title>
+</head>
+
+<body>
+    <div id="message" style="display: none;">Aqui é o display</div>
+
+    <script type="module">
+
+        const num_salas = 3;
+        const num_cadeiras = 6;
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBagkX85yzo0iVzSwELOAF32cRN9QGq6yo",
+            authDomain: "supertrunfosat.firebaseapp.com",
+            databaseURL: "https://supertrunfosat-default-rtdb.firebaseio.com",
+            projectId: "supertrunfosat",
+            storageBucket: "supertrunfosat.appspot.com",
+            messagingSenderId: "893775498960",
+            appId: "1:893775498960:web:e98bcf18a2a3acd9ebd8d5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+
+        const host = sessionStorage.getItem('ip_host');
+        function desautenticado_para_pagina_login() {
+            const mensagem = document.getElementById("message");
+            console.log(mensagem);
+            mensagem.style.display = "flex"; // Corrigido de 'flexbox' para 'flex'
+            mensagem.innerHTML = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
+            setTimeout(() => window.location.href = 'index.html', 4000);
+        }
+
+        function connect(host) {
+            const token = sessionStorage.getItem('token');
+            let mensagem = document.getElementById('message');
+            if (!token) {
+                desautenticado_para_pagina_login();
+                return;
+            }
+            const msg = {
+                tokenInvalido: function () {
+                    desautenticado_para_pagina_login();
+                },
+                solicitaCadeira: function (data) {
+                    console.log('Solicitação de cadeira recebida:', data);
+                    // Adicione o código para tratar a solicitação de cadeira
+                },
+                // Adicione mais funções de tratamento conforme necessário
+            };
+            const socket = new WebSocket(`ws://${host}:8080`);
+
+            socket.addEventListener('open', () => {
+                console.log('Connected to the WebSocket server');
+                socket.send(JSON.stringify({ token }));
+            });
+
+            socket.addEventListener('message', (event) => { //lida com as mensagens do servidor
+                const message = event.data;
+                switch (message) {
+                    case "Invalid token": msg.tokenInvalido(); break;
+                }
+            });
+
+            socket.addEventListener('close', () => {
+                console.log('Disconnected from the WebSocket server');
+            });
+        }
+
+        connect(host);
+    </script>
+</body>
+
+</html>

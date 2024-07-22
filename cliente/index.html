@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/login.css">
+  <title>Login Trunfo Sat</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="loginForm">
+    <div>
+      <label for="nick">Nickname:</label>
+      <input type="text" id="nick" name="nick" placeholder="Digite seu nickname">
+    </div>
+    <div>
+      <label for="code">Senha:</label>
+      <input type="password" id="code" name="code" placeholder="Digite sua senha">
+    </div>
+    <div>
+      <button type="submit">Login</button>
+    </div>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBagkX85yzo0iVzSwELOAF32cRN9QGq6yo",
+      authDomain: "supertrunfosat.firebaseapp.com",
+      databaseURL: "https://supertrunfosat-default-rtdb.firebaseio.com",
+      projectId: "supertrunfosat",
+      storageBucket: "supertrunfosat.appspot.com",
+      messagingSenderId: "893775498960",
+      appId: "1:893775498960:web:e98bcf18a2a3acd9ebd8d5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function getHost() {
+      // Obtém o IP do Firebase
+      get(ref(db, 'node/ip_host'))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            sessionStorage.setItem("ip_host", snapshot.val());
+          }
+        })
+        .catch((error) => {
+          console.error('Erro ao obter o IP do Firebase:', error);
+        });
+    }
+    getHost();
+
+    document.getElementById('loginForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const nick = document.getElementById('nick').value;
+      const code = document.getElementById('code').value;
+
+      try {
+        const response = await fetch(`http://${sessionStorage.getItem('ip_host')}:3000/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ nick, code })
+        });
+
+        if (response.ok) {
+          const token = await response.text(); // Recebe o token
+          sessionStorage.setItem('user', nick);
+          sessionStorage.setItem('token', token); // Armazena o token no sessionStorage
+          window.location.href = 'lobby.html';
+        } else {
+          const error = await response.text();
+          alert(`Login failed: ${error}`);
+        }
+      } catch (error) {
+        console.error('Erro ao fazer login:', error);
+        alert('Erro ao fazer login.');
+      }
+    });
+  </script>
+</body>
+</html>
