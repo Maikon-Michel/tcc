@@ -58,8 +58,8 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
       } else { // O jogador está na página do lobby
         socket.on('message', (message) => { //
             const data = JSON.parse(message);
-            console.log(data.type);
-            console.log(data.msg);
+            console.log("tipo: "+ data.type);
+            console.log("msg: " + data.msg);
           });
       }
 
