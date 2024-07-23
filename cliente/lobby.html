@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lobby Super Trunfo Sat</title>
 </head>
+
 <body>
-    <div id="message" style="display: none;">Aqui é o display</div>
-    <div id="greeting"></div> <!-- Elemento para exibir saudações -->
+    <div id="message" style="display: none;">Aqui é o display</div> <!--Para exibir mensagens-->
+    <div id="header"></div>
+    <div id="container"></div>
     <form id="teste">
         <input id="msg"></input><button>Enviar</button>
     </form>
@@ -27,19 +30,58 @@
         };
 
         const app = initializeApp(firebaseConfig);
-</script>
-<script>
+    </script>
+    <script>
+        const NUM_SALAS = 3;
+        let sou_host_sala = false;
         const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
-        let socket;
-        function manda_mensagem_ao_servidor(e){ //preparado para enviar mensagens
+        let socket; //deixar global
+        function manda_mensagem_ao_servidor(e) { //DELETAR. É SÓ PARA TESTE E REFERÊNCIA preparado para enviar mensagens
             e.preventDefault();
             const mensagem = document.getElementById("msg").value;
             socket.send(JSON.stringify({
-                    type: "teste",
-                    msg: mensagem
+                type: "teste",
+                msg: mensagem
             }));
         }
-
+        function solicita_cadeira(e){
+            const idButton = e.target.id;
+            const localizacao = idButton.split("_"); //elemento 1 é a sala, elemento 2 é a cadeira
+            socket.send(JSON.stringify({
+                type: "solicita_cadeira",
+                room: localizacao[1],
+                chair: localizacao[2]
+            }));
+        }
+        function build_rooms(){
+            const father = document.getElementById("container");
+            for(let i=1; i<=NUM_SALAS; i++){
+                let newRoom = document.createElement('div');
+                father.appendChild(newRoom);
+                let newSpan = document.createElement('span');
+                newRoom.appendChild(newSpan);
+                newSpan.innerText = "Sala: " + i;
+                newSpan.classList.add("titulo_sala");
+                newSpan = document.createElement('span');
+                newRoom.appendChild(newSpan);
+                let newButton = document.createElement('button');
+                newSpan.appendChild(newButton);
+                newButton.innerText = `Inciar Jogo`;
+                newButton.classList.add("botao_iniciar");
+                newButton.id = `buttonStart_${i}`;
+                newSpan.style.display = 'none';
+                newSpan = document.createElement('span');
+                newRoom.appendChild(newSpan);
+                for(let j=1; j<=6; j++){
+                    newButton = document.createElement('button');
+                    newSpan.appendChild(newButton);
+                    newButton.innerText = `Cadeira ${j}`;
+                    newButton.classList.add("botao_comum");
+                    newButton.id = `button_${i}_${j}`;
+                    newButton.addEventListener('click', solicita_cadeira);
+                }
+            }
+        }
         function desautenticado_para_pagina_login() {
             const mensagem = document.getElementById("message");
             mensagem.style.display = "flex";
@@ -50,7 +92,7 @@
 
         function connect(host) {
             const token = sessionStorage.getItem('token');
-            if (!token || !host) {
+            if (!token || !host) { //o jogador precisa ter token e saber o host
                 desautenticado_para_pagina_login();
                 return;
             }
@@ -66,24 +108,28 @@
             });
 
             socket.addEventListener('message', (event) => { //não usado ainda
+                //ATUALIZAÇÃO DAS CADEIRAS
+                //RECEBER O ACCEPT DA OPERAÇÃO (SENTAR)
                 const objeto = event.data;
                 console.log(objeto);
-                //const data = JSON.parse(event.data); //não está funcionando
-                 if (objeto == 'Invalid token') {
-                     desautenticado_para_pagina_login();
-                 } else if (objeto == 'greeting') {
-                     const greeting = document.getElementById('greeting');
-                     greeting.innerText = data.message;
-                 }
+                if (objeto == 'Invalid token') {
+                    desautenticado_para_pagina_login();
+                } else if (objeto == 'greeting') {
+                    const greeting = document.getElementById('greeting');
+                    greeting.innerText = data.message;
+                }
             });
 
             socket.addEventListener('close', () => {
+                //TRATAR DESCONEXÃO... TENTAR CONECTAR NOVAMENTE
                 console.log('Disconnected from the WebSocket server');
             });
         }
 
         connect(host);
+        build_rooms();
         document.getElementById("teste").addEventListener('submit', manda_mensagem_ao_servidor);
     </script>
 </body>
+
 </html>

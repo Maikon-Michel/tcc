@@ -56,10 +56,11 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
       if (page == "game"){ // o jogador está na página do jogo em ação
 
       } else { // O jogador está na página do lobby
-        socket.on('message', (message) => { //
+        socket.on('message', (message) => {
             const data = JSON.parse(message);
             console.log("tipo: "+ data.type);
-            console.log("msg: " + data.msg);
+            console.log("sala: " + data.room);
+            console.log("cadeira: " + data.chair);
           });
       }
 
