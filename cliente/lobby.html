@@ -36,7 +36,7 @@
             const mensagem = document.getElementById("msg").value;
             socket.send(JSON.stringify({
                     type: "teste",
-                    msg: "O cliente mandou um olá ao servidor"
+                    msg: mensagem
             }));
         }
 
@@ -44,7 +44,7 @@
             const mensagem = document.getElementById("message");
             mensagem.style.display = "flex";
             mensagem.innerHTML = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
-            setTimeout(() => window.location.href = 'index.html', 40000);
+            setTimeout(() => window.location.href = 'index.html', 4000);
         }
 
 

@@ -70,7 +70,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
   });
 });
 
-const serviceAccount = require('./key.json');
+const serviceAccount = require('../key.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: 'https://supertrunfosat-default-rtdb.firebaseio.com'
