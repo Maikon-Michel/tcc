@@ -56,13 +56,13 @@
 
             socket.addEventListener('message', (event) => { //não usado ainda
                 console.log(event);
-                const data = JSON.parse(event.data); //não está funcionando
-                 if (data.chave === 'invalid_token') {
-                     desautenticado_para_pagina_login();
-                 } else if (data.chave === 'greeting') {
-                     const greeting = document.getElementById('greeting');
-                     greeting.innerText = data.message;
-                 }
+                //const data = JSON.parse(event.data); //não está funcionando
+                 //if (data.chave === 'invalid_token') {
+                 //    desautenticado_para_pagina_login();
+                 //} else if (data.chave === 'greeting') {
+                 //    const greeting = document.getElementById('greeting');
+                 //    greeting.innerText = data.message;
+                // }
             });
 
             socket.addEventListener('close', () => {
