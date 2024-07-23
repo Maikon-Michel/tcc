@@ -58,6 +58,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
       } else { // O jogador está na página do lobby
         socket.on('message', (message) => {
             const data = JSON.parse(message);
+            //SWITCH PARA O TIPO DE SOLICITAÇÃO
             console.log("tipo: "+ data.type);
             console.log("sala: " + data.room);
             console.log("cadeira: " + data.chair);
