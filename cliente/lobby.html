@@ -60,7 +60,8 @@
                 console.log('Connected to the WebSocket server');
                 socket.send(JSON.stringify({ //padrão de envio de objetos
                     type: "login",
-                    token: token
+                    token: token,
+                    page: "lobby"
                 }));
             });
 

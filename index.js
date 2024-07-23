@@ -36,6 +36,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
   socket.on('message', (message) => {
     const data = JSON.parse(message);
     const token = data.token;
+    const page = data.page;
 
     if (!token) {
       socket.send('Invalid token');
@@ -52,12 +53,15 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
       socket.removeAllListeners('message');
       console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
       socket.send('Authenticated');
+      if (page == "game"){ // o jogador está na página do jogo em ação
 
-      socket.on('message', (message) => { //
-        const data = JSON.parse(message);
-        console.log(data.type);
-        console.log(data.msg);
-      });
+      } else { // O jogador está na página do lobby
+        socket.on('message', (message) => { //
+            const data = JSON.parse(message);
+            console.log(data.type);
+            console.log(data.msg);
+          });
+      }
 
       socket.on('close', () => {
         console.log('Client disconnected');
@@ -73,7 +77,7 @@ admin.initializeApp({
 });
 const db = admin.database();
 
-app.post('/login', async (req, res) => {
+app.post('/login', async (req, res) => { // o jogador está na página de loggin (sem socket)
   const { nick, code } = req.body;
 
   try {
@@ -92,7 +96,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-db.ref('node/ip_host').set(host)
+db.ref('node/ip_host').set(host) //DESNECESSÁRIO NO FUTURO. serve para avisar os clientes o IP do host, mas isso é realizado na configuração na hospedagem real
   .then(() => {
     console.log(`IP address ${host} set in Firebase at /ip_host`);
   })
