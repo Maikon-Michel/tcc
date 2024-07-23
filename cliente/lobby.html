@@ -12,7 +12,7 @@
         <input id="msg"></input><button>Enviar</button>
     </form>
 
-    <script type="module">
+    <script type="module"> //não usado por enquanto
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
         import { getDatabase } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 
@@ -27,42 +27,53 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const host = sessionStorage.getItem('ip_host');
-
+</script>
+<script>
+        const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
+        let socket;
         function manda_mensagem_ao_servidor(e){ //preparado para enviar mensagens
             e.preventDefault();
             const mensagem = document.getElementById("msg").value;
+            socket.send(JSON.stringify({
+                    type: "teste",
+                    msg: "O cliente mandou um olá ao servidor"
+            }));
         }
 
         function desautenticado_para_pagina_login() {
             const mensagem = document.getElementById("message");
             mensagem.style.display = "flex";
             mensagem.innerHTML = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
-            setTimeout(() => window.location.href = 'index.html', 4000);
+            setTimeout(() => window.location.href = 'index.html', 40000);
         }
+
 
         function connect(host) {
             const token = sessionStorage.getItem('token');
-            if (!token) {
+            if (!token || !host) {
                 desautenticado_para_pagina_login();
                 return;
             }
 
-            const socket = new WebSocket(`ws://${host}:8080`);
+            socket = new WebSocket(`ws://${host}:8080`);
             socket.addEventListener('open', () => {
                 console.log('Connected to the WebSocket server');
-                socket.send(JSON.stringify({ token })); //ao conectar envia o token
+                socket.send(JSON.stringify({ //padrão de envio de objetos
+                    type: "login",
+                    token: token
+                }));
             });
 
             socket.addEventListener('message', (event) => { //não usado ainda
-                console.log(event);
+                const objeto = event.data;
+                console.log(objeto);
                 //const data = JSON.parse(event.data); //não está funcionando
-                 //if (data.chave === 'invalid_token') {
-                 //    desautenticado_para_pagina_login();
-                 //} else if (data.chave === 'greeting') {
-                 //    const greeting = document.getElementById('greeting');
-                 //    greeting.innerText = data.message;
-                // }
+                 if (objeto == 'Invalid token') {
+                     desautenticado_para_pagina_login();
+                 } else if (objeto == 'greeting') {
+                     const greeting = document.getElementById('greeting');
+                     greeting.innerText = data.message;
+                 }
             });
 
             socket.addEventListener('close', () => {

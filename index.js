@@ -49,12 +49,14 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
         socket.close();
         return;
       }
-      console.log(`Authenticated user: ${decoded.nick}`);
+      socket.removeAllListeners('message');
+      console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
       socket.send('Authenticated');
 
-      socket.on('message', (message) => {
-        console.log(`Received: ${message}`);
-        socket.send(JSON.stringify(`Hello, ${decoded.nick}`));
+      socket.on('message', (message) => { //
+        const data = JSON.parse(message);
+        console.log(data.type);
+        console.log(data.msg);
       });
 
       socket.on('close', () => {
@@ -64,7 +66,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
   });
 });
 
-const serviceAccount = require('./serviceAccountKey.json');
+const serviceAccount = require('./key.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: 'https://supertrunfosat-default-rtdb.firebaseio.com'
