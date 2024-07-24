@@ -53,6 +53,24 @@
                 chair: localizacao[2]
             }));
         }
+        function atualiza_todas_cadeiras(cadeiras){
+            console.log(cadeiras);
+            for(let i=1; i<=NUM_SALAS; i++){
+                for(let j=1; j<=6; j++){
+                    let botao_atualizando = document.getElementById(`button_${i}_${j}`);
+                    botao_atualizando.classList.remove("eu_ocupo");
+                    if(cadeiras[i-1][j-1]){
+                        botao_atualizando.innerText = cadeiras[i-1][j-1];
+                        botao_atualizando.classList.remove("ninguem_sentado");
+                        botao_atualizando.classList.add("alguem_ocupa");
+                    } else {
+                        botao_atualizando.innerText = "Livre";
+                        botao_atualizando.classList.add("ninguem_sentado");
+                        botao_atualizando.classList.remove("alguem_ocupa");
+                    }
+                }
+            }
+        }
         function build_rooms(){
             const father = document.getElementById("container");
             for(let i=1; i<=NUM_SALAS; i++){
@@ -75,9 +93,10 @@
                 for(let j=1; j<=6; j++){
                     newButton = document.createElement('button');
                     newSpan.appendChild(newButton);
-                    newButton.innerText = `Cadeira ${j}`;
+                    //newButton.innerText = `Livre`;
                     newButton.classList.add("botao_comum");
                     newButton.id = `button_${i}_${j}`;
+                    newButton.classList.add("ninguem_sentado");
                     newButton.addEventListener('click', solicita_cadeira);
                 }
             }
@@ -88,8 +107,6 @@
             mensagem.innerHTML = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
             setTimeout(() => window.location.href = 'index.html', 4000);
         }
-
-
         function connect(host) {
             const token = sessionStorage.getItem('token');
             if (!token || !host) { //o jogador precisa ter token e saber o host
@@ -110,13 +127,15 @@
             socket.addEventListener('message', (event) => { //não usado ainda
                 //ATUALIZAÇÃO DAS CADEIRAS
                 //RECEBER O ACCEPT DA OPERAÇÃO (SENTAR)
-                const objeto = event.data;
+                const objeto = JSON.parse(event.data);
+                const type = objeto.type;
                 console.log(objeto);
-                if (objeto == 'Invalid token') {
+                console.log(type);
+                if (type == 'Invalid token') { //recebeu a negativa da atutenticação ao entrar na página
+                    alert("token existente errado");
                     desautenticado_para_pagina_login();
-                } else if (objeto == 'greeting') {
-                    const greeting = document.getElementById('greeting');
-                    greeting.innerText = data.message;
+                } else if (type == 'atualiza_cadeiras') { //recebeu o estado das cadeiras ao passar da autenticação
+                    atualiza_todas_cadeiras(objeto.cadeiras);
                 }
             });
 

@@ -37,7 +37,7 @@ for (let i = 0; i < NUM_SALAS; i++) {
     let linha = new Array(6).fill(null); // Inicializa cada coluna com 0 (ou qualquer valor desejado)
     cadeiras.push(linha);
 }
-//cadeiras[1][1] = "fran" //DELETAR TESTE
+cadeiras[1][1] = "fran" //DELETAR TESTE
 //INICIO DO CÓDIGO
 //TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
@@ -61,11 +61,15 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                 return;
             }
             socket.removeAllListeners('message');
-            console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
-            socket.send('Authenticated');
+            //console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
+            //socket.send('Authenticated');
             if (page == "game") { // o jogador está na página do jogo em ação
 
             } else { // O jogador está na página do lobby
+                socket.send(JSON.stringify({
+                    type: "atualiza_cadeiras",
+                    cadeiras: cadeiras
+                }));//envia a situação atual das cadeiras
                 socket.on('message', (message) => {
                     const data = JSON.parse(message);
                     //SWITCH PARA O TIPO DE SOLICITAÇÃO
@@ -86,6 +90,8 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             }
 
             socket.on('close', () => {
+                //SE ESTIVER OCUPANDO UMA CADEIRA PRECISA ATUALIZAR CADEIRAS E AVISAR OS CLIENTES
+                //(MAS PRIMEIRO DÁ UM TEMPO DE TOLERANCIA AO CLIENTE)
                 console.log('Client disconnected');
             });
         });
