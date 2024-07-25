@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <div id="message" style="display: none;">Aqui é o display</div> <!--Para exibir mensagens-->
+    <div id="message" style="visibility: hidden;">Aqui é o display</div> <!--Para exibir mensagens-->
     <div id="header"></div>
     <div id="container"></div>
     <form id="teste">
@@ -103,7 +103,7 @@
         }
         function desautenticado_para_pagina_login() {
             const mensagem = document.getElementById("message");
-            mensagem.style.display = "flex";
+            mensagem.style.visibility = "visible";
             mensagem.innerHTML = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
             setTimeout(() => window.location.href = 'index.html', 4000);
         }
@@ -135,8 +135,16 @@
                     alert("token existente errado");
                     desautenticado_para_pagina_login();
                 } else if (type == 'atualiza_cadeiras') { //recebeu o estado das cadeiras ao passar da autenticação
+                    console.log(objeto.cadeiras);
                     atualiza_todas_cadeiras(objeto.cadeiras);
                 }
+                 else if (type == 'avisa_cadeira_ocupada'){
+                    const display_message = document.getElementById("message");
+                    display_message.innerHTML = `Essa cadeira já está sendo ocupada por: <font color="red">${objeto.ocupante_atual}</red>`;
+                    display_message.style.visibility = "visible";
+                    setTimeout(()=>display_message.style.visibility = "hidden", 4000);
+                 }
+
             });
 
             socket.addEventListener('close', () => {

@@ -32,12 +32,30 @@ app.use(cookieParser());
 const server = new WebSocket.Server({ host: host, port: 8080 });
 
 const NUM_SALAS = 3;
+let conectados = {};
 let cadeiras = [];
 for (let i = 0; i < NUM_SALAS; i++) {
     let linha = new Array(6).fill(null); // Inicializa cada coluna com 0 (ou qualquer valor desejado)
     cadeiras.push(linha);
 }
 cadeiras[1][1] = "fran" //DELETAR TESTE
+
+//FUNÇÕES AUXILIARES
+function procura_usuario_nas_cadeiras(userNick) {
+    // Assume-se que NUM_SALAS e cadeiras são definidos globalmente ou passados como parâmetros.
+    for (let i = 0; i < NUM_SALAS; i++) {
+        for (let j = 0; j < 6; j++) {
+            if (userNick === cadeiras[i][j]) {
+                return [i, j]; // Retorna imediatamente quando o usuário é encontrado (em JS existe o early return com motor V8)
+            }
+        }
+    }
+    return null; // Retorna null se o usuário não for encontrado após varrer todas as cadeiras
+}
+function broadcastUsers(obj){
+    const numero_usuarios = Object.keys(obj);
+
+}
 //INICIO DO CÓDIGO
 //TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
@@ -49,40 +67,62 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
         const page = data.page;
 
         if (!token) {
-            socket.send('Invalid token');
+            socket.send(JSON.stringify({type: "Invalid token"}));
             socket.close();
             return;
         }
 
         jwt.verify(token, JWT_SECRET, (err, decoded) => {
             if (err) {
-                socket.send('Invalid token');
+                socket.send(JSON.stringify({type: "Invalid token"}));
                 socket.close();
                 return;
             }
             socket.removeAllListeners('message');
+            //incluir o cliente no array de controle de clientes conectados
+
+            // Adicionar cliente ao objeto conectados
+            const userNick = decoded.nick;
+            db.ref(`users/${userNick}`).once('value').then((snapshot) => {
+            const userData = snapshot.val();
+            if (userData) {
+                conectados[userNick] = Object.assign({}, userData);
+                console.log(`Cliente ${userNick} adicionado ao objeto conectados.`);
+            }
+            }).catch((error) => {
+            console.error('Erro ao buscar dados do usuário:', error);
+            });
+
+
             //console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
             //socket.send('Authenticated');
             if (page == "game") { // o jogador está na página do jogo em ação
 
             } else { // O jogador está na página do lobby
-                socket.send(JSON.stringify({
+                socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
                     type: "atualiza_cadeiras",
                     cadeiras: cadeiras
-                }));//envia a situação atual das cadeiras
+                }));
                 socket.on('message', (message) => {
                     const data = JSON.parse(message);
-                    //SWITCH PARA O TIPO DE SOLICITAÇÃO
                     if (data.type === "solicita_cadeira") {
-                        let r = Number(data.room);
-                        let c = Number(data.chair);
+                        let room = Math.floor(Number(data.room));
+                        let chair = Math.floor(Number(data.chair));                        
                         console.log("sala: " + data.room);
                         console.log("cadeira: " + data.chair);
-                        if (r > 0 && r <= NUM_SALAS && c > 0 && c < 6) {
-                            if (cadeiras[data.room-1][data.chair-1]) {//cadeira está ocupada
-                                console.log("cadeira ocupada"); //SIMPLESMENTE DÁ A RESPOSTA NEGATIVA
+                        if (room > 0 && room <= NUM_SALAS && chair > 0 && chair < 6) { //para evitar crash
+                            if (cadeiras[room-1][chair-1]) {// se cadeira está ocupada (-1 porque está deslocado, começando em 1)
+                                socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
+                                    type: "avisa_cadeira_ocupada",
+                                    ocupante_atual: cadeiras[room-1][chair-1]
+                                }));
                             } else { //cadeira livre
-                                console.log("cadeira livre"); //DÁ A RESPOSTA POSITIVA E AVISA OS DEMAIS CONECTADOS
+                                console.log("cadeira livre");
+                                let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
+                                cadeiras[room-1][chair-1] = userNick;
+                                console.log(antes_ocupava);
+                                //FAZ O BROADCAST QUE A CADEIRA FOI OCUPADA
+                                //O CLIENTE TEM QUE PERCEBER QUE ESTÁ FALANDO DELE E "ENTEDER" QUE ESTÁ FALANDO DELE
                             }
                         }
                     }
@@ -90,15 +130,34 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             }
 
             socket.on('close', () => {
-                //SE ESTIVER OCUPANDO UMA CADEIRA PRECISA ATUALIZAR CADEIRAS E AVISAR OS CLIENTES
-                //(MAS PRIMEIRO DÁ UM TEMPO DE TOLERANCIA AO CLIENTE)
-                console.log('Client disconnected');
+                if (conectados[userNick]) {
+                    delete conectados[userNick];
+                    let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
+                    if(antes_ocupava){
+                        // console.log(antes_ocupava);
+                        // console.log("0: "+antes_ocupava[0])
+                        // console.log("1: "+antes_ocupava[1])
+                        // console.log(cadeiras)
+                        // console.log(cadeiras[antes_ocupava[0]][antes_ocupava[1]])
+                        //cadeiras[antes_ocupava[0], antes_ocupava[1]] = null;
+                        cadeiras[antes_ocupava[0]][antes_ocupava[1]] = null;
+                        let nova_cadeira_vazia = {
+                            type: "cadeira_liberada",
+                            room: antes_ocupava[0],
+                            cadeira: antes_ocupava[1]
+                        }
+                        broadcastUsers(nova_cadeira_vazia);
+                    }
+                        //SE SIM, AVISAR TODOS CLIENTES QUE A CADEIRA ESTÁ VAGA
+                    console.log(`Cliente ${userNick} removido do objeto conectados.`);
+                }
             });
         });
     });
 });
 
 const serviceAccount = require('../key.json');
+const { stringify } = require('querystring');
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: 'https://supertrunfosat-default-rtdb.firebaseio.com'
