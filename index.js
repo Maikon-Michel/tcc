@@ -61,7 +61,28 @@ function broadcastUsers(message) {
         }
     }
 }
-
+function saindo_da_cadeira_atual(userNick) {
+    let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
+    if (antes_ocupava) {
+        cadeiras[antes_ocupava[0]][antes_ocupava[1]] = null;
+        let nova_cadeira_vazia = {
+            type: "cadeira_liberada",
+            room: Number(antes_ocupava[0]) + 1,
+            chair: Number(antes_ocupava[1]) + 1
+        }
+        broadcastUsers(nova_cadeira_vazia);
+    }
+}
+function ocupando_cadeira(userNick, room, chair){
+   cadeiras[room - 1][chair - 1] = userNick; //ocupa nova cadeira (levando em consideração a contagem de room e chair está deslocado em +1 (iniciando em 1) em relação ao vetor (inicia em 0))
+   let nova_cadeira_ocupada = {
+    type: "cadeira_ocupada",
+    userNick: userNick,
+    room: room,
+    chair: chair
+    }
+    broadcastUsers(nova_cadeira_ocupada);
+}
 //INICIO DO CÓDIGO
 //TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
@@ -73,14 +94,14 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
         const page = data.page;
 
         if (!token) {
-            socket.send(JSON.stringify({type: "Invalid token"}));
+            socket.send(JSON.stringify({ type: "Invalid token" }));
             socket.close();
             return;
         }
 
         jwt.verify(token, JWT_SECRET, (err, decoded) => {
             if (err) {
-                socket.send(JSON.stringify({type: "Invalid token"}));
+                socket.send(JSON.stringify({ type: "Invalid token" }));
                 socket.close();
                 return;
             }
@@ -90,16 +111,16 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             // Adicionar cliente ao objeto conectados
             const userNick = decoded.nick;
             db.ref(`users/${userNick}`).once('value').then((snapshot) => {
-            const userData = snapshot.val();
-            if (userData) {
-                conectados[userNick] = {
-                    ...userData,
-                    socket: socket // Adiciona o socket ao objeto de dados do usuário
-                };
-                console.log(`Cliente ${userNick} adicionado ao objeto conectados.`);
-            }
+                const userData = snapshot.val();
+                if (userData) {
+                    conectados[userNick] = {
+                        ...userData,
+                        socket: socket // Adiciona o socket ao objeto de dados do usuário
+                    };
+                    console.log(`Cliente ${userNick} adicionado ao objeto conectados.`);
+                }
             }).catch((error) => {
-            console.error('Erro ao buscar dados do usuário:', error);
+                console.error('Erro ao buscar dados do usuário:', error);
             });
 
 
@@ -116,22 +137,21 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                     const data = JSON.parse(message);
                     if (data.type === "solicita_cadeira") {
                         let room = Math.floor(Number(data.room));
-                        let chair = Math.floor(Number(data.chair));                        
+                        let chair = Math.floor(Number(data.chair));
                         console.log("sala: " + data.room);
                         console.log("cadeira: " + data.chair);
                         if (room > 0 && room <= NUM_SALAS && chair > 0 && chair <= 6) { //para evitar crash
-                            if (cadeiras[room-1][chair-1]) {// se cadeira está ocupada (-1 porque está deslocado, começando em 1)
+                            if (cadeiras[room - 1][chair - 1]) {// se cadeira está ocupada (-1 porque está deslocado, começando em 1)
                                 socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
                                     type: "avisa_cadeira_ocupada",
-                                    ocupante_atual: cadeiras[room-1][chair-1]
+                                    ocupante_atual: cadeiras[room - 1][chair - 1]
                                 }));
                             } else { //cadeira livre
                                 console.log("cadeira livre");
-                                let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
-                                cadeiras[room-1][chair-1] = userNick;
-                                console.log(antes_ocupava);
-                                //FAZ O BROADCAST QUE A CADEIRA FOI OCUPADA
-                                //O CLIENTE TEM QUE PERCEBER QUE ESTÁ FALANDO DELE E "ENTEDER" QUE ESTÁ FALANDO DELE
+                                saindo_da_cadeira_atual(userNick); //sai da cadeira anterior (se estiver) e avisa
+                                //cadeiras[room - 1][chair - 1] = userNick; //ocupa nova cadeira
+                                //realiza o broadcast para avisar todo mundo que sentou
+                                ocupando_cadeira(userNick, room, chair);
                             }
                         }
                     }
@@ -141,18 +161,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             socket.on('close', () => {
                 if (conectados[userNick]) {
                     delete conectados[userNick];
-                    let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
-                    if(antes_ocupava){
-                        cadeiras[antes_ocupava[0]][antes_ocupava[1]] = null;
-                        let nova_cadeira_vazia = {
-                            type: "cadeira_liberada",
-                            room: antes_ocupava[0],
-                            chair: antes_ocupava[1]
-                        }
-                        broadcastUsers(nova_cadeira_vazia);
-                    }
-                        //SE SIM, AVISAR TODOS CLIENTES QUE A CADEIRA ESTÁ VAGA
-                    console.log(`Cliente ${userNick} removido do objeto conectados.`);
+                    saindo_da_cadeira_atual(userNick);
                 }
             });
         });

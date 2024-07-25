@@ -61,11 +61,11 @@
                     botao_atualizando.classList.remove("eu_ocupo");
                     if(cadeiras[i-1][j-1]){
                         botao_atualizando.innerText = cadeiras[i-1][j-1];
-                        botao_atualizando.classList.remove("ninguem_sentado");
+                        botao_atualizando.classList.remove("ninguem_ocupando");
                         botao_atualizando.classList.add("alguem_ocupa");
                     } else {
                         botao_atualizando.innerText = "Livre";
-                        botao_atualizando.classList.add("ninguem_sentado");
+                        botao_atualizando.classList.add("ninguem_ocupando");
                         botao_atualizando.classList.remove("alguem_ocupa");
                     }
                 }
@@ -96,7 +96,7 @@
                     //newButton.innerText = `Livre`;
                     newButton.classList.add("botao_comum");
                     newButton.id = `button_${i}_${j}`;
-                    newButton.classList.add("ninguem_sentado");
+                    newButton.classList.add("ninguem_ocupando");
                     newButton.addEventListener('click', solicita_cadeira);
                 }
             }
@@ -144,8 +144,23 @@
                     display_message.style.visibility = "visible";
                     setTimeout(()=>display_message.style.visibility = "hidden", 4000);
                  }
-                 else if (type == "cadeira_liberada"){
+                 else if (type == "cadeira_liberada"){ //IMPLEMENTAR A LÓGICA DE DESOCUPAR A CADEIRA
                     console.log(`cadeira liberada da sala ${objeto.room} de numero ${objeto.chair} foi liberada`);
+                    let cadeira_selecionada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
+                    cadeira_selecionada.innerText = "Livre";
+                    cadeira_selecionada.classList.remove("cadeira_ocupada");
+                    cadeira_selecionada.classList.add("ninguem_ocupando");
+                 }
+                 else if (type == "cadeira_ocupada"){
+                    console.log(`a cadeira da sala ${objeto.room} numero ${objeto.chair} está sendo ocupado por ${objeto.userNick}`);
+                    let cadeira_selecionada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
+                    cadeira_selecionada.innerText = objeto.userNick;
+                    cadeira_selecionada.classList.remove("ninguem_ocupando");
+                    if(objeto.userNick === sessionStorage.getItem("user")){
+                        cadeira_selecionada.classList.add("cadeira_eu_ocupo");
+                    } else {
+                        cadeira_selecionada.classList.add("cadeira_ocupada");
+                    }
                  }
 
             });
