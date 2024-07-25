@@ -144,6 +144,9 @@
                     display_message.style.visibility = "visible";
                     setTimeout(()=>display_message.style.visibility = "hidden", 4000);
                  }
+                 else if (type == "cadeira_liberada"){
+                    console.log(`cadeira liberada da sala ${objeto.room} de numero ${objeto.chair} foi liberada`);
+                 }
 
             });
 

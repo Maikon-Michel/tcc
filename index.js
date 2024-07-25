@@ -52,10 +52,16 @@ function procura_usuario_nas_cadeiras(userNick) {
     }
     return null; // Retorna null se o usuário não for encontrado após varrer todas as cadeiras
 }
-function broadcastUsers(obj){
-    const numero_usuarios = Object.keys(obj);
-
+function broadcastUsers(message) {
+    const mensagem = JSON.stringify(message);
+    for (const userNick in conectados) {
+        const socketAtual = conectados[userNick].socket;
+        if (socketAtual.readyState === WebSocket.OPEN) {
+            socketAtual.send(mensagem);
+        }
+    }
 }
+
 //INICIO DO CÓDIGO
 //TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
@@ -86,7 +92,10 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             db.ref(`users/${userNick}`).once('value').then((snapshot) => {
             const userData = snapshot.val();
             if (userData) {
-                conectados[userNick] = Object.assign({}, userData);
+                conectados[userNick] = {
+                    ...userData,
+                    socket: socket // Adiciona o socket ao objeto de dados do usuário
+                };
                 console.log(`Cliente ${userNick} adicionado ao objeto conectados.`);
             }
             }).catch((error) => {
@@ -110,7 +119,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                         let chair = Math.floor(Number(data.chair));                        
                         console.log("sala: " + data.room);
                         console.log("cadeira: " + data.chair);
-                        if (room > 0 && room <= NUM_SALAS && chair > 0 && chair < 6) { //para evitar crash
+                        if (room > 0 && room <= NUM_SALAS && chair > 0 && chair <= 6) { //para evitar crash
                             if (cadeiras[room-1][chair-1]) {// se cadeira está ocupada (-1 porque está deslocado, começando em 1)
                                 socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
                                     type: "avisa_cadeira_ocupada",
@@ -134,17 +143,11 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                     delete conectados[userNick];
                     let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
                     if(antes_ocupava){
-                        // console.log(antes_ocupava);
-                        // console.log("0: "+antes_ocupava[0])
-                        // console.log("1: "+antes_ocupava[1])
-                        // console.log(cadeiras)
-                        // console.log(cadeiras[antes_ocupava[0]][antes_ocupava[1]])
-                        //cadeiras[antes_ocupava[0], antes_ocupava[1]] = null;
                         cadeiras[antes_ocupava[0]][antes_ocupava[1]] = null;
                         let nova_cadeira_vazia = {
                             type: "cadeira_liberada",
                             room: antes_ocupava[0],
-                            cadeira: antes_ocupava[1]
+                            chair: antes_ocupava[1]
                         }
                         broadcastUsers(nova_cadeira_vazia);
                     }
