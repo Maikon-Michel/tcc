@@ -38,7 +38,7 @@ for (let i = 0; i < NUM_SALAS; i++) {
     let linha = new Array(6).fill(null); // Inicializa cada coluna com 0 (ou qualquer valor desejado)
     cadeiras.push(linha);
 }
-cadeiras[1][1] = "fran" //DELETAR TESTE
+//cadeiras[1][1] = "fran" //DELETAR TESTE
 
 //FUNÇÕES AUXILIARES
 function procura_usuario_nas_cadeiras(userNick) {
@@ -157,7 +157,33 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                     }
                     else if(data.type === "solicita_inicio_game"){ //o lider solicita o inicio da partida
                         console.log(`Foi solicitado o inicio do jogo em ${data.room}`);
-                        //VERIFICAR SE O JOGADOR ESTÁ MESMO OCUPANDO A CADEIRA 1 DA SALA DELE
+                        
+                        console.log(`ocupante da sala solicitada ` + cadeiras[data.room-1][0]);
+                        if(cadeiras[data.room-1][0] === userNick){//verifica se o jogador solicitante realmente é o lider da sala
+                            let jogadores_da_sala = cadeiras[data.room - 1].filter(jogador => jogador !== null);
+                            if(jogadores_da_sala.length < 2){ // se não tem jogador suficiente
+                                socket.send(JSON.stringify({type: "jogadores_insuficientes" }));//envia a situação atual de todas cadeiras
+                            } else { //tudo pronto para começar a partida da sala data.room
+                                //faz um broadcast para avisar que a sala está ocupada (ocultando ela)
+                                //NO GAME OVER SE DEVE REMOVER TODOS USUARIOS DA CADEIRAS E DESOCULTAR A SALA
+                                for (let i = 0; i < jogadores_da_sala.length; i++) {//avisa os usuarios envolvidos para serem redimencionados
+                                    const jogador_sala = jogadores_da_sala[i];  // Supondo que jogadores_da_sala contém os nicks dos usuários
+                                    if (conectados[jogador_sala]) {  // Verifica se o usuário está no objeto conectados
+                                        console.log(`Dados do usuário ${jogador_sala}:`, conectados[jogador_sala].socket);  // Exibe todos os dados do usuário
+                                        let socket_novo_jogador = conectados[jogador_sala].socket;
+                                        socket_novo_jogador.send(JSON.stringify({ //envia a situação atual de todas cadeiras
+                                            type: "partida_inicializada",
+                                            room: data.room,
+                                            position: i,
+                                            mode: "10" //está fixo agora, AJUSTAR PARA SER EDITÁVEL AO LIDER
+                                        }));
+                                    } else {
+                                        console.log(`ERRO! Usuário ${jogador_sala} não encontrado em 'conectados'.`);
+                                    }
+                                }
+                                
+                            }
+                        }
 
                     }
                 });

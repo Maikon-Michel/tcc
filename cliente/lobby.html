@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <div id="message" style="visibility: hidden;">Aqui é o display</div> <!--Para exibir mensagens-->
+    <div id="message" style="visibility: hidden;"><span style="visibility: hidden;">-</span></div> <!--Para exibir mensagens-->
     <div id="header"></div>
     <div id="container"></div>
     <!-- <form id="teste">
@@ -34,6 +34,8 @@
     <script>
         const NUM_SALAS = 3;
         let sou_host_sala = false;
+        let tentativas_conecatar = 10;
+        let idTimeOutMensagem;
         const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
         let socket; //deixar global
         // function manda_mensagem_ao_servidor(e) { //DELETAR. É SÓ PARA TESTE E REFERÊNCIA preparado para enviar mensagens
@@ -44,14 +46,31 @@
         //         msg: mensagem
         //     }));
         // }
+        function exibe_mensagem(msg){
+            clearTimeout(idTimeOutMensagem);
+            const campo_messagem = document.getElementById("message");
+            campo_messagem.innerHTML += msg +"<br>";
+            campo_messagem.style.visibility = "visible";
+            idTimeOutMensagem = setTimeout(()=>{campo_messagem.innerHTML='<span style="visibility: hidden;">-</span>'; campo_messagem.style.visibility="hidden"}, 4000);
+        }
+        function envia_mensagem_servidor(obj){
+            const string_mensagem = JSON.stringify(obj);
+            try{
+                socket.send(string_mensagem)
+            }
+            catch {
+                exibe_mensagem("Erro de conexão");
+                reconectar();
+            }
+        }
         function solicita_inicio_jogo(e){
             const idButton = e.target.id;
             const localizacao = idButton.split("_"); //elemento 1 é a sala, elemento 2 é a cadeira
-            socket.send(JSON.stringify({
+            envia_mensagem_servidor({
                 type: "solicita_inicio_game",
                 room: localizacao[1],
                 page: "lobby"
-            }));
+            });
         }
         function solicita_cadeira(e){
             const idButton = e.target.id;
@@ -116,9 +135,8 @@
             }
         }
         function desautenticado_para_pagina_login() {
-            const mensagem = document.getElementById("message");
-            mensagem.style.visibility = "visible";
-            mensagem.innerHTML = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
+            const mensagem = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
+            exibe_mensagem(mensagem);
             setTimeout(() => window.location.href = 'index.html', 4000);
         }
         function connect(host) {
@@ -153,10 +171,12 @@
                     atualiza_todas_cadeiras(objeto.cadeiras);
                 }
                  else if (type == 'avisa_cadeira_ocupada'){
-                    const display_message = document.getElementById("message");
-                    display_message.innerHTML = `Essa cadeira já está sendo ocupada por: <font color="red">${objeto.ocupante_atual}</red>`;
-                    display_message.style.visibility = "visible";
-                    setTimeout(()=>display_message.style.visibility = "hidden", 4000);
+                    const display_message = `Essa cadeira já está sendo ocupada por: <font color="red">${objeto.ocupante_atual}</red>`;
+                    exibe_mensagem(display_message);
+                 }
+                 else if (type == 'jogadores_insuficientes'){
+                    const display_message = `É necessário ter o número suficiente de jogadores para iniciar a partida`;
+                    exibe_mensagem(display_message);
                  }
                  else if (type == "cadeira_liberada"){ //IMPLEMENTAR A LÓGICA DE DESOCUPAR A CADEIRA
                     console.log(`cadeira liberada da sala ${objeto.room} de numero ${objeto.chair} foi liberada`);
@@ -182,16 +202,41 @@
                         cadeira_selecionada.classList.add("cadeira_ocupada");
                     }
                  }
+                 else if (type === "partida_inicializada"){ //partida pronta
+                    //alert(` partida foi inicializada para vc na sala ${objeto.room} na posição ${objeto.position} com o módulo ${objeto.mode}`);
+                    sessionStorage.setItem("room", objeto.room);
+                    sessionStorage.setItem("position", objeto.position);
+                    sessionStorage.setItem("mode", objeto.mode);
+                    setTimeout(() => window.location.href = 'game.html', 4000);
+                    const mensagem = `<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! Sala: ${objeto.room}, Posição: ${objeto.position} na modularidade <strong style="color: yellow;">${objeto.mode}</strong> cartas</span>`;
+                    exibe_mensagem(mensagem);
+                 }
 
             });
 
             socket.addEventListener('close', () => {
                 //TRATAR DESCONEXÃO... TENTAR CONECTAR NOVAMENTE
-                console.log('Disconnected from the WebSocket server');
+                tentativas_conecatar = 10;
+                reconectar();
             });
         }
-
+        function reconectar(){
+            if(tentativas_conecatar-- > 0){
+                if(socket && socket.readyState === WebSocket.OPEN){
+                    tentativas_conecatar = 10; //reseta as tentativas para a próxima vez
+                    exibe_mensagem("<font color='green'>Conectado");
+                } else {
+                    if(tentativas_conecatar < 9){
+                        exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar (${tentativas_conecatar})</font>`);
+                    }
+                    setTimeout(reconectar, 4000);
+                }
+            } else { // perdeu a conecção consistentemente
+                window.location.href = 'index.html'
+            }
+        }
         connect(host);
+        setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
         build_rooms();
         //document.getElementById("teste").addEventListener('submit', manda_mensagem_ao_servidor);
     </script>
