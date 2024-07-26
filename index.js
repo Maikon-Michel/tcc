@@ -110,7 +110,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
 
             // Adicionar cliente ao objeto conectados
             const userNick = decoded.nick;
-            db.ref(`users/${userNick}`).once('value').then((snapshot) => {
+            db.ref(`users/${userNick}`).once('value').then((snapshot) => {//busca os dados do jogador conectado no firebase, depois atualiza o array de jogadores conectados
                 const userData = snapshot.val();
                 if (userData) {
                     conectados[userNick] = {
@@ -126,7 +126,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
 
             //console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
             //socket.send('Authenticated');
-            if (page == "game") { // o jogador está na página do jogo em ação
+            if (page != "lobby") { // o jogador está na página do jogo em ação
 
             } else { // O jogador está na página do lobby
                 socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
@@ -154,6 +154,11 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                                 ocupando_cadeira(userNick, room, chair);
                             }
                         }
+                    }
+                    else if(data.type === "solicita_inicio_game"){ //o lider solicita o inicio da partida
+                        console.log(`Foi solicitado o inicio do jogo em ${data.room}`);
+                        //VERIFICAR SE O JOGADOR ESTÁ MESMO OCUPANDO A CADEIRA 1 DA SALA DELE
+
                     }
                 });
             }
