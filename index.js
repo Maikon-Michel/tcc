@@ -1,5 +1,5 @@
 //CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
-const {host, app, db, jwt, serviceAccount, port, JWT_SECRET, server} = require('./config');
+const {host, app, db, jwt, port, JWT_SECRET, server} = require('./config');
 
 const NUM_SALAS = 3;
 let conectados = {};

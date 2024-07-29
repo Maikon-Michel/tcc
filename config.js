@@ -39,7 +39,6 @@ module.exports = {
     app,
     db,
     jwt,
-    serviceAccount,
     port,
     JWT_SECRET,
     server
