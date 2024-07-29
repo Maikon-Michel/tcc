@@ -5,34 +5,6 @@ const NUM_SALAS = 3;
 const {host, app, db, jwt, port, JWT_SECRET, server, WebSocket} = require('./config');
 require('./handlers')(app, db, jwt, JWT_SECRET); //TRATAMENTO DE REQUISIÇÕES HTTP (handlers)
 
-//HANDLERS PARA REQUISIÇÕES HTTP
-// app.post('/login', async (req, res) => { // o jogador está na página de loggin (sem socket)
-//     const { nick, code } = req.body;
-
-//     try {
-//         const snapshot = await db.ref(`users/${nick}`).once('value');
-//         const user = snapshot.val();
-
-//         if (user && user.code === code) {
-//             const token = jwt.sign({ nick }, JWT_SECRET, { expiresIn: '10h' });
-//             res.send(token);
-//         } else {
-//             res.status(401).send('Invalid nickname or password');
-//         }
-//     } catch (error) {
-//         console.error('Error during login:', error);
-//         res.status(500).send('Internal server error');
-//     }
-// });
-
-let conectados = {};
-let cadeiras = []; 
-let jogos = {}; //variaveis que controlam o jogo
-for (let i = 0; i < NUM_SALAS; i++) {
-    let linha = new Array(6).fill(null); // Inicializa cada coluna com 0 (ou qualquer valor desejado)
-    cadeiras.push(linha);
-    jogos[`room_${i+1}`] = null;
-}
 
 //FUNÇÕES AUXILIARES
 function procura_usuario_nas_cadeiras(userNick) {
@@ -87,6 +59,33 @@ function ocupando_cadeira(userNick, room, chair){
     }
     broadcastUsers(nova_cadeira_ocupada, null);
 }
+function inicializaSala(){ //aqui tem todas as variaveis que a ação do jogo precisa
+    dadosRoom = {};
+    dadosRoom.turn = 0;
+    dadosRoom. activite = false;
+    dadosRoom.mode = 5;
+    for(let i = 1; i<=6; i++){
+        dadosRoom[`player${i}`] = null;
+    }
+    return dadosRoom;
+}
+function resetRoom(codRoom){
+    jogos[`room_${codRoom}`] = inicializaSala();
+}
+function inicializaControle(cadeiras, jogos){
+    for (let i = 0; i < NUM_SALAS; i++) {
+        let linha = new Array(6).fill(null);
+        cadeiras.push(linha);
+        resetRoom(i+1);
+    }
+}
+ //VARIAVEIS DE CONTROLE DO JOGO E DOS JOGADORES
+let conectados = {}; //lista de jogadores conectados
+let cadeiras = [];  //interção com o lobby (sistema de ocupar cadeira e sala)
+let jogos = {}; // interação com as salas onde acontecem o jogos (todas variaveis de interação com cada jogo)
+inicializaControle(cadeiras, jogos); //prepara estrutura de dados
+
+
 //INICIO DO CÓDIGO
 //TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
@@ -168,6 +167,10 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                             if(jogadores_da_sala.length < 2){ // se não tem jogador suficiente
                                 socket.send(JSON.stringify({type: "jogadores_insuficientes" }));//envia a situação atual de todas cadeiras
                             } else { //tudo pronto para começar a partida da sala data.room
+                                resetRoom(data.room);
+                                let idSalaConfigurando = `room_${data.room}`;
+                                jogos[idSalaConfigurando].mode = 10;
+                                jogos[idSalaConfigurando].activite = true;
                                 //faz um broadcast para avisar que a sala está ocupada (ocultando ela)
                                 //NO GAME OVER SE DEVE REMOVER TODOS USUARIOS DA CADEIRAS E DESOCULTAR A SALA
                                 for (let i = 0; i < jogadores_da_sala.length; i++) {//avisa os usuarios envolvidos para serem redimencionados
@@ -181,17 +184,17 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                                             position: i,
                                             mode: "10" //está fixo agora, AJUSTAR PARA SER EDITÁVEL AO LIDER
                                         }));
-                                    } else {
-                                        console.log(`ERRO! Usuário ${jogador_sala} não encontrado em 'conectados'.`);
-                                    }
-                                    broadcastUsers({
-                                        type: "sala_sendo_ocupada",
-                                        room: data.room
-                                    })
-                                    //  MONTAR A ESTRUTURA CORRETA QUE SERÁ USADA NO JOGO
-                                    //jogos[data.room][i] = conectados[jogador_sala].code;
+                                        let configP = {};
+                                        configP.name = jogador_sala;
+                                        configP.cards = conectados[jogador_sala].cards;
+                                        jogos[idSalaConfigurando][`player${i + 1}`] = configP;
+                                    } 
                                 }
-                                console.log(jogos);
+                                broadcastUsers({
+                                    type: "sala_sendo_ocupada",
+                                    room: data.room
+                                }, null);
+                                console.log(jogos["room_1"]);
                             }
                         }
 
