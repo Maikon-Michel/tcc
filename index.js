@@ -1,44 +1,15 @@
-//DEFINIÇÕES DE VARIAVEIS, CONFIGURAÇÕES E MIDWARES
-const os = require('os');
-const express = require('express');
-const admin = require('firebase-admin');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken');
-const WebSocket = require('ws');
-require('dotenv').config();
-
-function getLocalIPAddress() {// VAI SER DELETADO NA HOSPEDAGEM REAL
-    const interfaces = os.networkInterfaces();
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal && iface.address.startsWith('192.168.')) {
-                return iface.address;
-            }
-        }
-    }
-    return '127.0.0.1';
-}
-
-const app = express();
-const port = 3000;
-const host = getLocalIPAddress();
-const JWT_SECRET = process.env.JWT_SECRET;
-
-app.use(cors());
-app.use(express.json());
-app.use(cookieParser());
-
-const server = new WebSocket.Server({ host: host, port: 8080 });
+//CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
+const {host, app, db, jwt, serviceAccount, port, JWT_SECRET, server} = require('./config');
 
 const NUM_SALAS = 3;
 let conectados = {};
-let cadeiras = [];
+let cadeiras = []; 
+let jogos = {}; //variaveis que controlam o jogo
 for (let i = 0; i < NUM_SALAS; i++) {
     let linha = new Array(6).fill(null); // Inicializa cada coluna com 0 (ou qualquer valor desejado)
     cadeiras.push(linha);
+    jogos[`room_${i+1}`] = null;
 }
-//cadeiras[1][1] = "fran" //DELETAR TESTE
 
 //FUNÇÕES AUXILIARES
 function procura_usuario_nas_cadeiras(userNick) {
@@ -105,8 +76,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                 socket.close();
                 return;
             }
-            socket.removeAllListeners('message');
-            //incluir o cliente no array de controle de clientes conectados
+            socket.removeAllListeners('message'); //haverá um branch entre jogadores do lobby e na pagina do jogo
 
             // Adicionar cliente ao objeto conectados
             const userNick = decoded.nick;
@@ -122,12 +92,15 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             }).catch((error) => {
                 console.error('Erro ao buscar dados do usuário:', error);
             });
-
-
-            //console.log(`Authenticated user: ${decoded.nick}`); //se chegou aqui é porque foi aprovado
-            //socket.send('Authenticated');
             if (page != "lobby") { // o jogador está na página do jogo em ação
+                socket.send(JSON.stringify({ //ao entrar na página do game manda a mensagem
+                    type: "atualiza_cadeiras",
+                    cadeiras: cadeiras
+                }));
+                socket.on('message', (message) => {//resposta especificas aos jogadores na sala do jogo
+                    const data = JSON.parse(message);
 
+                });
             } else { // O jogador está na página do lobby
                 socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
                     type: "atualiza_cadeiras",
@@ -149,8 +122,6 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                             } else { //cadeira livre
                                 console.log("cadeira livre");
                                 saindo_da_cadeira_atual(userNick); //sai da cadeira anterior (se estiver) e avisa
-                                //cadeiras[room - 1][chair - 1] = userNick; //ocupa nova cadeira
-                                //realiza o broadcast para avisar todo mundo que sentou
                                 ocupando_cadeira(userNick, room, chair);
                             }
                         }
@@ -169,7 +140,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                                 for (let i = 0; i < jogadores_da_sala.length; i++) {//avisa os usuarios envolvidos para serem redimencionados
                                     const jogador_sala = jogadores_da_sala[i];  // Supondo que jogadores_da_sala contém os nicks dos usuários
                                     if (conectados[jogador_sala]) {  // Verifica se o usuário está no objeto conectados
-                                        console.log(`Dados do usuário ${jogador_sala}:`, conectados[jogador_sala].socket);  // Exibe todos os dados do usuário
+                                        //console.log(`Dados do usuário ${jogador_sala}:`, conectados[jogador_sala].socket);  // Exibe todos os dados do usuário
                                         let socket_novo_jogador = conectados[jogador_sala].socket;
                                         socket_novo_jogador.send(JSON.stringify({ //envia a situação atual de todas cadeiras
                                             type: "partida_inicializada",
@@ -180,8 +151,14 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
                                     } else {
                                         console.log(`ERRO! Usuário ${jogador_sala} não encontrado em 'conectados'.`);
                                     }
+                                    broadcastUsers({
+                                        type: "sala_sendo_ocupada",
+                                        room: data.room
+                                    })
+                                    //  MONTAR A ESTRUTURA CORRETA QUE SERÁ USADA NO JOGO
+                                    //jogos[data.room][i] = conectados[jogador_sala].code;
                                 }
-                                
+                                console.log(jogos);
                             }
                         }
 
@@ -199,13 +176,7 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
     });
 });
 
-const serviceAccount = require('../key.json');
-const { stringify } = require('querystring');
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://supertrunfosat-default-rtdb.firebaseio.com'
-});
-const db = admin.database();
+
 
 app.post('/login', async (req, res) => { // o jogador está na página de loggin (sem socket)
     const { nick, code } = req.body;
@@ -227,15 +198,7 @@ app.post('/login', async (req, res) => { // o jogador está na página de loggin
 });
 
 db.ref('node/ip_host').set(host) //DESNECESSÁRIO NO FUTURO. serve para avisar os clientes o IP do host, mas isso é realizado na configuração na hospedagem real
-    .then(() => {
-        console.log(`IP address ${host} set in Firebase at /ip_host`);
-    })
-    .catch((error) => {
-        console.error('Erro ao definir o IP no Firebase:', error);
-    });
 
 app.listen(port, host, () => {
     console.log(`Servidor rodando em http://${host}:${port}`);
 });
-
-console.log(`WebSocket server is running on ws://${host}:8080`);
