@@ -41,5 +41,6 @@ module.exports = {
     jwt,
     port,
     JWT_SECRET,
-    server
+    server,
+    WebSocket
 };

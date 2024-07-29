@@ -1,7 +1,30 @@
-//CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
-const {host, app, db, jwt, port, JWT_SECRET, server} = require('./config');
-
+//CONSTANTES
 const NUM_SALAS = 3;
+
+//CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
+const {host, app, db, jwt, port, JWT_SECRET, server, WebSocket} = require('./config');
+require('./handlers')(app, db, jwt, JWT_SECRET); //TRATAMENTO DE REQUISIÇÕES HTTP (handlers)
+
+//HANDLERS PARA REQUISIÇÕES HTTP
+// app.post('/login', async (req, res) => { // o jogador está na página de loggin (sem socket)
+//     const { nick, code } = req.body;
+
+//     try {
+//         const snapshot = await db.ref(`users/${nick}`).once('value');
+//         const user = snapshot.val();
+
+//         if (user && user.code === code) {
+//             const token = jwt.sign({ nick }, JWT_SECRET, { expiresIn: '10h' });
+//             res.send(token);
+//         } else {
+//             res.status(401).send('Invalid nickname or password');
+//         }
+//     } catch (error) {
+//         console.error('Error during login:', error);
+//         res.status(500).send('Internal server error');
+//     }
+// });
+
 let conectados = {};
 let cadeiras = []; 
 let jogos = {}; //variaveis que controlam o jogo
@@ -23,12 +46,22 @@ function procura_usuario_nas_cadeiras(userNick) {
     }
     return null; // Retorna null se o usuário não for encontrado após varrer todas as cadeiras
 }
-function broadcastUsers(message) {
+function broadcastUsers(message, target) { //com null a mensagem é para todos
     const mensagem = JSON.stringify(message);
-    for (const userNick in conectados) {
-        const socketAtual = conectados[userNick].socket;
-        if (socketAtual.readyState === WebSocket.OPEN) {
-            socketAtual.send(mensagem);
+    if(target){ // a mensagem tem um publico alvo
+        for (const userNick in target) {
+            let nomeAtual = target[userNick];
+            let socketAtual = conectados[nomeAtual].socket;
+            if (socketAtual && socketAtual.readyState === WebSocket.OPEN) {
+                socketAtual.send(mensagem);
+            }
+        }
+    } else { // a mensagem é para todos
+        for (const userNick in conectados) {
+            const socketAtual = conectados[userNick].socket;
+            if (socketAtual.readyState === WebSocket.OPEN) {
+                socketAtual.send(mensagem);
+            }
         }
     }
 }
@@ -41,7 +74,7 @@ function saindo_da_cadeira_atual(userNick) {
             room: Number(antes_ocupava[0]) + 1,
             chair: Number(antes_ocupava[1]) + 1
         }
-        broadcastUsers(nova_cadeira_vazia);
+        broadcastUsers(nova_cadeira_vazia, null);
     }
 }
 function ocupando_cadeira(userNick, room, chair){
@@ -52,14 +85,14 @@ function ocupando_cadeira(userNick, room, chair){
     room: room,
     chair: chair
     }
-    broadcastUsers(nova_cadeira_ocupada);
+    broadcastUsers(nova_cadeira_ocupada, null);
 }
 //INICIO DO CÓDIGO
 //TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
     console.log('Client connected');
 
-    socket.on('message', (message) => {
+    socket.on('message', (message) => { //a primeira fase é só para tratar o token
         const data = JSON.parse(message);
         const token = data.token;
         const page = data.page;
@@ -174,27 +207,6 @@ server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRAN
             });
         });
     });
-});
-
-
-
-app.post('/login', async (req, res) => { // o jogador está na página de loggin (sem socket)
-    const { nick, code } = req.body;
-
-    try {
-        const snapshot = await db.ref(`users/${nick}`).once('value');
-        const user = snapshot.val();
-
-        if (user && user.code === code) {
-            const token = jwt.sign({ nick }, JWT_SECRET, { expiresIn: '10h' });
-            res.send(token);
-        } else {
-            res.status(401).send('Invalid nickname or password');
-        }
-    } catch (error) {
-        console.error('Error during login:', error);
-        res.status(500).send('Internal server error');
-    }
 });
 
 db.ref('node/ip_host').set(host) //DESNECESSÁRIO NO FUTURO. serve para avisar os clientes o IP do host, mas isso é realizado na configuração na hospedagem real
