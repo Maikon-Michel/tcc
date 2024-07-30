@@ -15,7 +15,7 @@ class GameUtils {
         return null;
     }
 
-    broadcastUsers(message, target, conectados) {
+    broadcastUsersLobby(message, target, conectados) {
         const mensagem = JSON.stringify(message);
         if (target) {
             for (const userNick in target) {
@@ -44,7 +44,7 @@ class GameUtils {
                 room: Number(antes_ocupava[0]) + 1,
                 chair: Number(antes_ocupava[1]) + 1
             }
-            this.broadcastUsers(nova_cadeira_vazia, null, conectados);
+            this.broadcastUsersLobby(nova_cadeira_vazia, null, conectados);
         }
     }
 
@@ -56,7 +56,7 @@ class GameUtils {
             room: room,
             chair: chair
         }
-        this.broadcastUsers(nova_cadeira_ocupada, null, conectados);
+        this.broadcastUsersLobby(nova_cadeira_ocupada, null, conectados);
     }
 
     inicializaSala() {
@@ -74,11 +74,12 @@ class GameUtils {
         jogos[`room_${codRoom}`] = this.inicializaSala();
     }
 
-    inicializaControle(cadeiras, jogos) {
+    inicializaControle(cadeiras, jogos, salas_ocupadas) {
         for (let i = 0; i < this.NUM_SALAS; i++) {
             let linha = new Array(6).fill(null);
             cadeiras.push(linha);
             this.resetRoom(i + 1, jogos);
+            salas_ocupadas.push(false);
         }
     }
 
