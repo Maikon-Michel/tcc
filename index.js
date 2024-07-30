@@ -27,7 +27,12 @@ aux.inicializaControle(cadeiras, jogos, salas_ocupadas); // prepara estrutura de
 // TRATAMENTO DOS SOCKETS
 server.on('connection', (socket) => {
     console.log('Client connected');
-    socket.on('message', (message) => {
+
+
+   // aux.broadcastUsersLobby({type: "teste"}, null, conectados);
+
+
+    socket.on('message', async (message) => { // Torna a função assíncrona
         const data = JSON.parse(message);
         const token = data.token;
         const page = data.page;
@@ -39,7 +44,7 @@ server.on('connection', (socket) => {
         }
         socket.removeAllListeners('message'); // O jogador foi aprovado na autenticação e será redimensionado para outro tratamento
 
-        aux.get_data_from_user(userNick, socket, db, conectados);
+        await aux.get_data_from_user(userNick, socket, db, conectados); //await necessário para esperar a resposta do firebase antes de continuar
 
         if (page === "lobby") { 
             LobbyHandler.handleLobby(socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas);

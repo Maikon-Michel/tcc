@@ -89,6 +89,9 @@
                         botao_atualizando.classList.remove("alguem_ocupa");
                     }
                 }
+                let nova_disposicao = ocupadas[i]?"hidden":"visible";
+                let divAtualizada = document.getElementById(`divRoom_${i+1}`);
+                if (divAtualizada)  divAtualizada.style.visibility = nova_disposicao;
             }
             console.log("VEtor de salas ocupadas"); //ajustar isso para ocultar as salas ocupadas. Será um vetor
             console.log(ocupadas); //ajustar isso para ocultar as salas ocupadas. Será um vetor
@@ -180,6 +183,9 @@
                     let spanStart = document.getElementById(`spanStart_${objeto.room}`);
                     spanStart.style.visibility = "hidden";
                  }
+                // else if(type === "teste"){                 
+                //     console.log("Recebi o teste");
+                // }
                  else if (type == "cadeira_ocupada"){
                     console.log(`a cadeira da sala ${objeto.room} numero ${objeto.chair} está sendo ocupado por ${objeto.userNick}`);
                     let cadeira_selecionada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
@@ -204,13 +210,12 @@
                     const mensagem = `<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! Sala: ${objeto.room}, Posição: ${objeto.position} na modularidade <strong style="color: yellow;">${objeto.mode}</strong> cartas</span>`;
                     exibe_mensagem(mensagem);
                  }
-                 else if (type === "sala_sendo_ocupada"){
-                    const sala_ocupada = document.getElementById(`divRoom_${objeto.room}`);
-                    sala_ocupada.style.visibility = "hidden";
-                 }
-                 else if (type === "sala_sendo_desocupada"){
-                    const sala_ocupada = document.getElementById(`divRoom_${objeto.room}`);
-                    sala_ocupada.style.visibility = "visible";
+                 else if (type === "atualiza_disposicao_sala"){
+                    console.log("estou na disposicao das salas: ");
+                    for(let i=0; i<NUM_SALAS;i++){
+                        let nova_disposicao = objeto.ocupadas[i]?"hidden":"visible";
+                        document.getElementById(`divRoom_${i+1}`).style.visibility = nova_disposicao;
+                    }
                  }
 
             });
@@ -236,9 +241,9 @@
                 window.location.href = 'index.html'
             }
         }
+        build_rooms();
         connect(host);
         setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
-        build_rooms();
     </script>
 </body>
 

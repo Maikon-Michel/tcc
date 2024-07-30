@@ -1,11 +1,9 @@
 module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas) {
-
     socket.send(JSON.stringify({
         type: "atualiza_cadeiras",
         cadeiras: cadeiras,
         ocupadas: salas_ocupadas
     }));
-
     socket.on('message', (message) => {
         const data = JSON.parse(message);
         if (data.type === "solicita_cadeira") {
@@ -37,6 +35,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                         const jogador_sala = jogadores_da_sala[i];
                         if (conectados[jogador_sala]) {
                             let socket_novo_jogador = conectados[jogador_sala].socket;
+                            //conectados[jogador_sala].page = "game";
                             socket_novo_jogador.send(JSON.stringify({
                                 type: "partida_inicializada",
                                 room: data.room,
@@ -46,12 +45,11 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                             let configP = {};
                             configP.name = jogador_sala;
                             configP.cards = conectados[jogador_sala].cards; //ISSO DEVE SER AJUSTADO DEPOIS DA IMPOLEMENTAÇÃO DA SALA "DECK"
-                            jogos[idSalaConfigurando][`player${i + 1}`] = configP;
+                            jogos[idSalaConfigurando][`player${i + 1}`] = configP; //configura o inicio das var dos jogos em ação
                         }
                     }
                     aux.broadcastUsersLobby({ //ISSO DEVERIA SER SÓ PARA OS JOGADORES DO LOBBY
-                        type: "sala_sendo_ocupada",
-                        room: data.room,
+                        type: "atualiza_disposicao_sala",
                         ocupadas: salas_ocupadas
                     }, null, conectados);
                 }

@@ -1,3 +1,5 @@
+// utils.js
+
 class GameUtils {
     constructor(NUM_SALAS, WebSocket) {
         this.NUM_SALAS = NUM_SALAS;
@@ -21,14 +23,14 @@ class GameUtils {
             for (const userNick in target) {
                 let nomeAtual = target[userNick];
                 let socketAtual = conectados[nomeAtual].socket;
-                if (socketAtual && socketAtual.readyState === this.WebSocket.OPEN) {
+                if (socketAtual && socketAtual.readyState === this.WebSocket.OPEN && conectados[userNick].page === "lobby") {
                     socketAtual.send(mensagem);
                 }
             }
         } else {
             for (const userNick in conectados) {
                 const socketAtual = conectados[userNick].socket;
-                if (socketAtual.readyState === this.WebSocket.OPEN) {
+                if (socketAtual.readyState === this.WebSocket.OPEN && conectados[userNick].page === "lobby") {
                     socketAtual.send(mensagem);
                 }
             }
@@ -83,18 +85,20 @@ class GameUtils {
         }
     }
 
-    get_data_from_user(userNick, socket, db, conectados) {
-        db.ref(`users/${userNick}`).once('value').then((snapshot) => {
+    async get_data_from_user(userNick, socket, db, conectados) {
+        try {
+            const snapshot = await db.ref(`users/${userNick}`).once('value');
             const userData = snapshot.val();
             if (userData) {
                 conectados[userNick] = {
                     ...userData,
-                    socket: socket
+                    socket: socket,
+                    page: "lobby"
                 };
             }
-        }).catch((error) => {
+        } catch (error) {
             console.error('Erro ao buscar dados do usuário:', error);
-        });
+        }
     }
 }
 

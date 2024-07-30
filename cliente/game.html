@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Super Trunfo Sat</title>
+</head>
+
+<body>
+    <div id="container">sala do jogo</div>
+
+    <script>
+        let tentativas_conecatar = 10;
+        let idTimeOutMensagem;
+        const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
+        let socket;
+        function envia_mensagem_servidor(obj){
+            const string_mensagem = JSON.stringify(obj);
+            if(socket && socket.readyState === WebSocket.OPEN){
+                socket.send(string_mensagem)
+            } else {
+                console.log("Erro de conexão");
+                reconectar();
+            }
+        }
+        function desautenticado_para_pagina_login() {
+            const mensagem = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
+            console.log(mensagem);
+            setTimeout(() => window.location.href = 'index.html', 4000);
+        }
+        function connect(host) {
+            const token = sessionStorage.getItem('token');
+            if (!token || !host) { //o jogador precisa ter token e saber o host
+                desautenticado_para_pagina_login();
+                return;
+            }
+
+            socket = new WebSocket(`ws://${host}:8080`);
+            socket.addEventListener('open', () => {
+                console.log('Connected to the WebSocket server');
+                envia_mensagem_servidor({ //padrão de envio de objetos
+                    type: "login",
+                    token: token,
+                    page: "game"
+                });
+            });
+
+            socket.addEventListener('message', (event) => { //não usado ainda
+                const objeto = JSON.parse(event.data);
+                const type = objeto.type;
+                if (type == 'Invalid token') { //recebeu a negativa da atutenticação ao entrar na página
+                    alert("token existente errado");
+                    desautenticado_para_pagina_login();
+                } else if(type === "teste"){                 
+                    console.log("Recebi o teste");
+                } else {
+                    console.log("tudo certo");
+                }
+            });
+
+            socket.addEventListener('close', () => {
+                tentativas_conecatar = 10;
+                reconectar();
+            });
+        }
+        function reconectar(){
+            if(tentativas_conecatar-- > 0){
+                if(socket && socket.readyState === WebSocket.OPEN){
+                    tentativas_conecatar = 10; //reseta as tentativas para a próxima vez
+                    //console.log("<font color='green'>Conectado");
+                } else {
+                    if(tentativas_conecatar < 9){
+                        console.log(`<font color="red">Problema na conexão! Tentando reconectar (${tentativas_conecatar})</font>`);
+                        connect(host);
+                    }
+                    setTimeout(reconectar, 4000);
+                }
+            } else { // perdeu a conecção consistentemente
+                window.location.href = 'index.html'
+            }
+        }
+        connect(host);
+        setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
+    </script>
+</body>
+
+</html>
