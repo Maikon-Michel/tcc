@@ -41,7 +41,7 @@
         function exibe_mensagem(msg){
             clearTimeout(idTimeOutMensagem);
             const campo_messagem = document.getElementById("message");
-            campo_messagem.innerHTML += msg +"<br>";
+            campo_messagem.innerHTML = msg;
             campo_messagem.style.visibility = "visible";
             idTimeOutMensagem = setTimeout(()=>{campo_messagem.innerHTML='<span style="visibility: hidden;">-</span>'; campo_messagem.style.visibility="hidden"}, 4000);
         }
@@ -73,7 +73,7 @@
                 page: "lobby"
             });
         }
-        function atualiza_todas_cadeiras(cadeiras){
+        function atualiza_todas_cadeiras(cadeiras, ocupadas){
             console.log(cadeiras);
             for(let i=1; i<=NUM_SALAS; i++){
                 for(let j=1; j<=6; j++){
@@ -90,6 +90,8 @@
                     }
                 }
             }
+            console.log("VEtor de salas ocupadas"); //ajustar isso para ocultar as salas ocupadas. Será um vetor
+            console.log(ocupadas); //ajustar isso para ocultar as salas ocupadas. Será um vetor
         }
         function build_rooms(){
             const father = document.getElementById("container");
@@ -152,14 +154,14 @@
             socket.addEventListener('message', (event) => { //não usado ainda
                 const objeto = JSON.parse(event.data);
                 const type = objeto.type;
-                console.log(objeto);
-                console.log(type);
+                console.log("vet1");
+                console.log(objeto.ocupadas);
                 if (type == 'Invalid token') { //recebeu a negativa da atutenticação ao entrar na página
                     alert("token existente errado");
                     desautenticado_para_pagina_login();
                 } else if (type == 'atualiza_cadeiras') { //no inicio, recebe o estado das cadeiras ao passar da autenticação
                     console.log(objeto.cadeiras);
-                    atualiza_todas_cadeiras(objeto.cadeiras);
+                    atualiza_todas_cadeiras(objeto.cadeiras, objeto.ocupadas);
                 }
                  else if (type == 'avisa_cadeira_ocupada'){
                     const display_message = `Essa cadeira já está sendo ocupada por: <font color="red">${objeto.ocupante_atual}</red>`;

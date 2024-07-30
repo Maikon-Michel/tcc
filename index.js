@@ -1,218 +1,114 @@
-//CONSTANTES
+// index.js
+
+// CONSTANTES
 const NUM_SALAS = 3;
 
-//CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
-const {host, app, db, jwt, port, JWT_SECRET, server, WebSocket} = require('./config');
-require('./handlers')(app, db, jwt, JWT_SECRET); //TRATAMENTO DE REQUISIÇÕES HTTP (handlers)
+// CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
+const { host, app, db, jwt, port, JWT_SECRET, server, WebSocket } = require('./config');
+require('./handlers')(app, db, jwt, JWT_SECRET); // TRATAMENTO DE REQUISIÇÕES HTTP (handlers) [login]
+const authenticate = require('./auth')(jwt, JWT_SECRET);
+const GameUtils = require('./utils'); // IMPORTA A CLASSE AUXILIAR
 
+// INICIALIZA A CLASSE COM AS VARIAVEIS NECESSÁRIAS
+const aux = new GameUtils(NUM_SALAS, WebSocket);
 
-//FUNÇÕES AUXILIARES
-function procura_usuario_nas_cadeiras(userNick) {
-    // Assume-se que NUM_SALAS e cadeiras são definidos globalmente ou passados como parâmetros.
-    for (let i = 0; i < NUM_SALAS; i++) {
-        for (let j = 0; j < 6; j++) {
-            if (userNick === cadeiras[i][j]) {
-                return [i, j]; // Retorna imediatamente quando o usuário é encontrado (em JS existe o early return com motor V8)
-            }
-        }
-    }
-    return null; // Retorna null se o usuário não for encontrado após varrer todas as cadeiras
-}
-function broadcastUsers(message, target) { //com null a mensagem é para todos
-    const mensagem = JSON.stringify(message);
-    if(target){ // a mensagem tem um publico alvo
-        for (const userNick in target) {
-            let nomeAtual = target[userNick];
-            let socketAtual = conectados[nomeAtual].socket;
-            if (socketAtual && socketAtual.readyState === WebSocket.OPEN) {
-                socketAtual.send(mensagem);
-            }
-        }
-    } else { // a mensagem é para todos
-        for (const userNick in conectados) {
-            const socketAtual = conectados[userNick].socket;
-            if (socketAtual.readyState === WebSocket.OPEN) {
-                socketAtual.send(mensagem);
-            }
-        }
-    }
-}
-function saindo_da_cadeira_atual(userNick) {
-    let antes_ocupava = procura_usuario_nas_cadeiras(userNick);
-    if (antes_ocupava) {
-        cadeiras[antes_ocupava[0]][antes_ocupava[1]] = null;
-        let nova_cadeira_vazia = {
-            type: "cadeira_liberada",
-            room: Number(antes_ocupava[0]) + 1,
-            chair: Number(antes_ocupava[1]) + 1
-        }
-        broadcastUsers(nova_cadeira_vazia, null);
-    }
-}
-function ocupando_cadeira(userNick, room, chair){
-   cadeiras[room - 1][chair - 1] = userNick; //ocupa nova cadeira (levando em consideração a contagem de room e chair está deslocado em +1 (iniciando em 1) em relação ao vetor (inicia em 0))
-   let nova_cadeira_ocupada = {
-    type: "cadeira_ocupada",
-    userNick: userNick,
-    room: room,
-    chair: chair
-    }
-    broadcastUsers(nova_cadeira_ocupada, null);
-}
-function inicializaSala(){ //aqui tem todas as variaveis que a ação do jogo precisa
-    dadosRoom = {};
-    dadosRoom.turn = 0;
-    dadosRoom. activite = false;
-    dadosRoom.mode = 5;
-    for(let i = 1; i<=6; i++){
-        dadosRoom[`player${i}`] = null;
-    }
-    return dadosRoom;
-}
-function resetRoom(codRoom){
-    jogos[`room_${codRoom}`] = inicializaSala();
-}
-function inicializaControle(cadeiras, jogos){
-    for (let i = 0; i < NUM_SALAS; i++) {
-        let linha = new Array(6).fill(null);
-        cadeiras.push(linha);
-        resetRoom(i+1);
-    }
-}
- //VARIAVEIS DE CONTROLE DO JOGO E DOS JOGADORES
-let conectados = {}; //lista de jogadores conectados
-let cadeiras = [];  //interção com o lobby (sistema de ocupar cadeira e sala)
+// VARIAVEIS DE CONTROLE DO JOGO E DOS JOGADORES
+let conectados = {}; // lista de jogadores conectados
+let cadeiras = [];  // interção com o lobby (sistema de ocupar cadeira e sala)
 let jogos = {}; // interação com as salas onde acontecem o jogos (todas variaveis de interação com cada jogo)
-inicializaControle(cadeiras, jogos); //prepara estrutura de dados
+aux.inicializaControle(cadeiras, jogos); // prepara estrutura de dados
 
-
-//INICIO DO CÓDIGO
-//TRATAMENTO DOS SOCKETS
-server.on('connection', (socket) => { //INCLUIR A FUNÇÃO PARA DEIXAR MAIS TRANPARENTE
+// INICIO DO CÓDIGO
+// TRATAMENTO DOS SOCKETS
+server.on('connection', (socket) => {
     console.log('Client connected');
-
-    socket.on('message', (message) => { //a primeira fase é só para tratar o token
+    socket.on('message', (message) => {
         const data = JSON.parse(message);
         const token = data.token;
         const page = data.page;
-
-        if (!token) {
+        const userNick = authenticate(token);
+        if (!userNick) {
             socket.send(JSON.stringify({ type: "Invalid token" }));
             socket.close();
             return;
         }
+        socket.removeAllListeners('message'); // O jogador foi aprovado na autenticação e será redimensionado para outro tratamento
 
-        jwt.verify(token, JWT_SECRET, (err, decoded) => {
-            if (err) {
-                socket.send(JSON.stringify({ type: "Invalid token" }));
-                socket.close();
-                return;
-            }
-            socket.removeAllListeners('message'); //haverá um branch entre jogadores do lobby e na pagina do jogo
-
-            // Adicionar cliente ao objeto conectados
-            const userNick = decoded.nick;
-            db.ref(`users/${userNick}`).once('value').then((snapshot) => {//busca os dados do jogador conectado no firebase, depois atualiza o array de jogadores conectados
-                const userData = snapshot.val();
-                if (userData) {
-                    conectados[userNick] = {
-                        ...userData,
-                        socket: socket // Adiciona o socket ao objeto de dados do usuário
-                    };
-                    console.log(`Cliente ${userNick} adicionado ao objeto conectados.`);
-                }
-            }).catch((error) => {
-                console.error('Erro ao buscar dados do usuário:', error);
+        aux.get_data_from_user(userNick, socket, db, conectados);
+        if (page != "lobby") { //o jogador está na página de ação
+            socket.on('message', (message) => {
+                const data = JSON.parse(message);
+                // Adicione o código de tratamento da página de jogo em ação aqui
             });
-            if (page != "lobby") { // o jogador está na página do jogo em ação
-                socket.send(JSON.stringify({ //ao entrar na página do game manda a mensagem
-                    type: "atualiza_cadeiras",
-                    cadeiras: cadeiras
-                }));
-                socket.on('message', (message) => {//resposta especificas aos jogadores na sala do jogo
-                    const data = JSON.parse(message);
-
-                });
-            } else { // O jogador está na página do lobby
-                socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
-                    type: "atualiza_cadeiras",
-                    cadeiras: cadeiras
-                }));
-                socket.on('message', (message) => {
-                    const data = JSON.parse(message);
-                    if (data.type === "solicita_cadeira") {
-                        let room = Math.floor(Number(data.room));
-                        let chair = Math.floor(Number(data.chair));
-                        console.log("sala: " + data.room);
-                        console.log("cadeira: " + data.chair);
-                        if (room > 0 && room <= NUM_SALAS && chair > 0 && chair <= 6) { //para evitar crash
-                            if (cadeiras[room - 1][chair - 1]) {// se cadeira está ocupada (-1 porque está deslocado, começando em 1)
-                                socket.send(JSON.stringify({ //envia a situação atual de todas cadeiras
-                                    type: "avisa_cadeira_ocupada",
-                                    ocupante_atual: cadeiras[room - 1][chair - 1]
-                                }));
-                            } else { //cadeira livre
-                                console.log("cadeira livre");
-                                saindo_da_cadeira_atual(userNick); //sai da cadeira anterior (se estiver) e avisa
-                                ocupando_cadeira(userNick, room, chair);
-                            }
+        } else { //o jogador está no lobby
+            let salas_ocupadas = [true, false, false];
+            socket.send(JSON.stringify({
+                type: "atualiza_cadeiras",
+                cadeiras: cadeiras,
+                ocupadas: salas_ocupadas
+            }));
+            socket.on('message', (message) => {
+                const data = JSON.parse(message);
+                if (data.type === "solicita_cadeira") {
+                    let room = Math.floor(Number(data.room));
+                    let chair = Math.floor(Number(data.chair));
+                    if (room > 0 && room <= NUM_SALAS && chair > 0 && chair <= 6) {
+                        if (cadeiras[room - 1][chair - 1]) {
+                            socket.send(JSON.stringify({
+                                type: "avisa_cadeira_ocupada",
+                                ocupante_atual: cadeiras[room - 1][chair - 1]
+                            }));
+                        } else {
+                            aux.saindo_da_cadeira_atual(userNick, cadeiras, conectados);
+                            aux.ocupando_cadeira(userNick, room, chair, cadeiras, conectados);
                         }
                     }
-                    else if(data.type === "solicita_inicio_game"){ //o lider solicita o inicio da partida
-                        console.log(`Foi solicitado o inicio do jogo em ${data.room}`);
-                        
-                        console.log(`ocupante da sala solicitada ` + cadeiras[data.room-1][0]);
-                        if(cadeiras[data.room-1][0] === userNick){//verifica se o jogador solicitante realmente é o lider da sala
-                            let jogadores_da_sala = cadeiras[data.room - 1].filter(jogador => jogador !== null);
-                            if(jogadores_da_sala.length < 2){ // se não tem jogador suficiente
-                                socket.send(JSON.stringify({type: "jogadores_insuficientes" }));//envia a situação atual de todas cadeiras
-                            } else { //tudo pronto para começar a partida da sala data.room
-                                resetRoom(data.room);
-                                let idSalaConfigurando = `room_${data.room}`;
-                                jogos[idSalaConfigurando].mode = 10;
-                                jogos[idSalaConfigurando].activite = true;
-                                //faz um broadcast para avisar que a sala está ocupada (ocultando ela)
-                                //NO GAME OVER SE DEVE REMOVER TODOS USUARIOS DA CADEIRAS E DESOCULTAR A SALA
-                                for (let i = 0; i < jogadores_da_sala.length; i++) {//avisa os usuarios envolvidos para serem redimencionados
-                                    const jogador_sala = jogadores_da_sala[i];  // Supondo que jogadores_da_sala contém os nicks dos usuários
-                                    if (conectados[jogador_sala]) {  // Verifica se o usuário está no objeto conectados
-                                        //console.log(`Dados do usuário ${jogador_sala}:`, conectados[jogador_sala].socket);  // Exibe todos os dados do usuário
-                                        let socket_novo_jogador = conectados[jogador_sala].socket;
-                                        socket_novo_jogador.send(JSON.stringify({ //envia a situação atual de todas cadeiras
-                                            type: "partida_inicializada",
-                                            room: data.room,
-                                            position: i,
-                                            mode: "10" //está fixo agora, AJUSTAR PARA SER EDITÁVEL AO LIDER
-                                        }));
-                                        let configP = {};
-                                        configP.name = jogador_sala;
-                                        configP.cards = conectados[jogador_sala].cards;
-                                        jogos[idSalaConfigurando][`player${i + 1}`] = configP;
-                                    } 
+                } else if (data.type === "solicita_inicio_game") {
+                    if (cadeiras[data.room - 1][0] === userNick) {
+                        let jogadores_da_sala = cadeiras[data.room - 1].filter(jogador => jogador !== null);
+                        if (jogadores_da_sala.length < 2) {
+                            socket.send(JSON.stringify({ type: "jogadores_insuficientes" }));
+                        } else {
+                            aux.resetRoom(data.room, jogos);
+                            let idSalaConfigurando = `room_${data.room}`;
+                            jogos[idSalaConfigurando].mode = 10;
+                            jogos[idSalaConfigurando].activite = true;
+                            for (let i = 0; i < jogadores_da_sala.length; i++) {
+                                const jogador_sala = jogadores_da_sala[i];
+                                if (conectados[jogador_sala]) {
+                                    let socket_novo_jogador = conectados[jogador_sala].socket;
+                                    socket_novo_jogador.send(JSON.stringify({
+                                        type: "partida_inicializada",
+                                        room: data.room,
+                                        position: i,
+                                        mode: "10"
+                                    }));
+                                    let configP = {};
+                                    configP.name = jogador_sala;
+                                    configP.cards = conectados[jogador_sala].cards;
+                                    jogos[idSalaConfigurando][`player${i + 1}`] = configP;
                                 }
-                                broadcastUsers({
-                                    type: "sala_sendo_ocupada",
-                                    room: data.room
-                                }, null);
-                                console.log(jogos["room_1"]);
                             }
+                            aux.broadcastUsers({
+                                type: "sala_sendo_ocupada",
+                                room: data.room
+                            }, null, conectados);
                         }
-
                     }
-                });
-            }
-
-            socket.on('close', () => {
-                if (conectados[userNick]) {
-                    delete conectados[userNick];
-                    saindo_da_cadeira_atual(userNick);
                 }
             });
+        }
+
+        socket.on('close', () => {
+            if (conectados[userNick]) {
+                delete conectados[userNick];
+                aux.saindo_da_cadeira_atual(userNick, cadeiras, conectados);
+            }
         });
     });
 });
 
-db.ref('node/ip_host').set(host) //DESNECESSÁRIO NO FUTURO. serve para avisar os clientes o IP do host, mas isso é realizado na configuração na hospedagem real
+db.ref('node/ip_host').set(host);
 
 app.listen(port, host, () => {
     console.log(`Servidor rodando em http://${host}:${port}`);
