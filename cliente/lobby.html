@@ -1,276 +1,244 @@
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/lobby.css">
     <title>Lobby Super Trunfo Sat</title>
-    <link rel="stylesheet" href="./css/lobby.css">
 </head>
-
 <body>
-    <div id="message" style="visibility: hidden;"><span style="visibility: hidden;">-</span></div> <!--Para exibir mensagens-->
+    <div id="message" class="message-hidden"><span>-</span></div> <!--Para exibir mensagens-->
     <div id="header"></div>
     <div id="container"></div>
 
+    <script>
+        //declaração de variaveis
+        const NUM_SALAS = 3;
+        let tentativas_conecatar = 10;
+        let idTimeOutMensagem;
+        const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
+        let socket;
+        //funções
+        function exibe_mensagem(msg){ //duplo
+            clearTimeout(idTimeOutMensagem);
+            const campo_messagem = document.getElementById("message");
+            campo_messagem.innerHTML = msg;
+            campo_messagem.classList.remove("message-hidden");
+            campo_messagem.classList.add("message-visible");
+            idTimeOutMensagem = setTimeout(()=>{
+                campo_messagem.innerHTML='<span>-</span>';
+                campo_messagem.classList.remove("message-visible");
+                campo_messagem.classList.add("message-hidden");
+            }, 4000);
+        }
 
+        function envia_mensagem_servidor(obj){ //duplo
+            const string_mensagem = JSON.stringify(obj);
+            if(socket && socket.readyState === WebSocket.OPEN){
+                socket.send(string_mensagem);
+            } else {
+                exibe_mensagem("Erro de conexão");
+                reconectar();
+            }
+        }
 
- <!DOCTYPE html>
- <html lang="pt">
- <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Lobby Super Trunfo Sat</title>
- </head>
- <body>
-     <div id="message" style="visibility: hidden;"><span style="visibility: hidden;">-</span></div> <!--Para exibir mensagens-->
-     <div id="header"></div>
-     <div id="container"></div>
- 
-     <script type="module"> //não usado por enquanto
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-        import { getDatabase } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+        function solicita_inicio_jogo(e){
+            const idButton = e.target.id;
+            const localizacao = idButton.split("_"); //elemento 1 é a sala, elemento 2 é a cadeira
+            envia_mensagem_servidor({
+                type: "solicita_inicio_game",
+                room: localizacao[1],
+                page: "lobby"
+            });
+        }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBagkX85yzo0iVzSwELOAF32cRN9QGq6yo",
-            authDomain: "supertrunfosat.firebaseapp.com",
-            databaseURL: "https://supertrunfosat-default-rtdb.firebaseio.com",
-            projectId: "supertrunfosat",
-            storageBucket: "supertrunfosat.appspot.com",
-            messagingSenderId: "893775498960",
-            appId: "1:893775498960:web:e98bcf18a2a3acd9ebd8d5"
-        };
+        function solicita_cadeira(e){
+            const idButton = e.target.id;
+            const localizacao = idButton.split("_"); //elemento 1 é a sala, elemento 2 é a cadeira
+            envia_mensagem_servidor({
+                type: "solicita_cadeira",
+                room: localizacao[1],
+                chair: localizacao[2],
+                page: "lobby"
+            });
+        }
 
-        const app = initializeApp(firebaseConfig);
+        function atualiza_todas_cadeiras(cadeiras, ocupadas){
+            for(let i=1; i<=NUM_SALAS; i++){
+                for(let j=1; j<=6; j++){
+                    let botao_atualizando = document.getElementById(`button_${i}_${j}`);
+                    botao_atualizando.classList.remove("eu_ocupo");
+                    if(cadeiras[i-1][j-1]){
+                        botao_atualizando.innerText = cadeiras[i-1][j-1];
+                        botao_atualizando.classList.remove("ninguem_ocupando");
+                        botao_atualizando.classList.add("alguem_ocupa");
+                    } else {
+                        botao_atualizando.innerText = "Livre";
+                        botao_atualizando.classList.add("ninguem_ocupando");
+                        botao_atualizando.classList.remove("alguem_ocupa");
+                    }
+                }
+                let nova_disposicao = ocupadas[i]?"none":"flex";
+                let divAtualizada = document.getElementById(`divRoom_${i+1}`);
+                if (divAtualizada)  divAtualizada.style.display = nova_disposicao;
+            }
+        }
+
+        function build_rooms(){
+            const father = document.getElementById("container");
+            for(let i=1; i<=NUM_SALAS; i++){
+                let newRoom = document.createElement('div');
+                newRoom.id = `divRoom_${i}`;
+                newRoom.classList.add("div_rooms");
+                newRoom.style.display = "flex";
+                father.appendChild(newRoom);
+                let newSpan = document.createElement('span');
+                newRoom.appendChild(newSpan);
+                newSpan.innerText = "Sala: " + i;
+                newSpan.classList.add("titulo_sala");
+
+                newSpan = document.createElement('span');
+                newRoom.appendChild(newSpan);
+                for(let j=1; j<=6; j++){
+                    let newButton = document.createElement('button');
+                    newSpan.appendChild(newButton);
+                    newButton.innerText = `Livre`;
+                    newButton.classList.add("botao_comum");
+                    newButton.id = `button_${i}_${j}`;
+                    newButton.classList.add("ninguem_ocupando");
+                    newButton.addEventListener('click', solicita_cadeira);
+                }
+                newSpan = document.createElement('span');
+                newRoom.appendChild(newSpan);
+                newButton = document.createElement('button');
+                newSpan.appendChild(newButton);
+                newButton.innerText = `Inciar Jogo`;
+                newButton.classList.add("botao_iniciar");
+                newButton.id = `buttonStart_${i}`;
+                newButton.addEventListener('click', solicita_inicio_jogo);
+                newSpan.id = `spanStart_${i}`;
+                newSpan.style.visibility = 'hidden';
+            }
+        }
+
+        function desautenticado_para_pagina_login() { //duplo
+            const mensagem = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
+            exibe_mensagem(mensagem);
+            setTimeout(() => window.location.href = 'index.html', 4000);
+        }
+
+        function connect(host) {
+            const token = sessionStorage.getItem('token');
+            if (!token || !host) { //o jogador precisa ter token e saber o host
+                desautenticado_para_pagina_login();
+                return;
+            }
+
+            socket = new WebSocket(`ws://${host}:8080`);
+            socket.addEventListener('open', () => {
+                console.log('Connected to the WebSocket server');
+                envia_mensagem_servidor({ //padrão de envio de objetos
+                    type: "login",
+                    token: token,
+                    page: "lobby"
+                });
+            });
+
+            socket.addEventListener('message', (event) => {
+                const objeto = JSON.parse(event.data);
+                const type = objeto.type;
+                console.log(objeto);
+                switch(type) {
+                    case 'Invalid token':
+                        alert("token existente errado");
+                        desautenticado_para_pagina_login();
+                        break;
+                    case 'atualiza_cadeiras':
+                        atualiza_todas_cadeiras(objeto.cadeiras, objeto.ocupadas);
+                        for(let i=0; i<NUM_SALAS; i++){
+                           let nova_disposicao = objeto.ocupadas[i]?"none":"flex";
+                           document.getElementById(`divRoom_${i+1}`).style.display = nova_disposicao;
+                        }
+                        break;
+                    case 'avisa_cadeira_ocupada':
+                        const display_message_ocupada = `Essa cadeira já está sendo ocupada por: <font color="red">${objeto.ocupante_atual}</red>`;
+                        exibe_mensagem(display_message_ocupada);
+                        break;
+                    case 'jogadores_insuficientes':
+                        const display_message_insuficientes = `É necessário ter o número suficiente de jogadores para iniciar a partida`;
+                        exibe_mensagem(display_message_insuficientes);
+                        break;
+                    case 'cadeira_liberada':
+                        let cadeira_selecionada_liberada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
+                        cadeira_selecionada_liberada.innerText = "Livre";
+                        cadeira_selecionada_liberada.classList.remove("cadeira_eu_ocupo");
+                        cadeira_selecionada_liberada.classList.remove("cadeira_ocupada");
+                        cadeira_selecionada_liberada.classList.remove("alguem_ocupa");
+                        cadeira_selecionada_liberada.classList.add("ninguem_ocupando");
+                        let spanStart = document.getElementById(`spanStart_${objeto.room}`);
+                        spanStart.style.visibility = "hidden";
+                        break;
+                    case 'cadeira_ocupada':
+                        let cadeira_selecionada_ocupada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
+                        cadeira_selecionada_ocupada.innerText = objeto.userNick;
+                        cadeira_selecionada_ocupada.classList.remove("ninguem_ocupando");
+                        if(objeto.userNick === sessionStorage.getItem("user")){
+                            cadeira_selecionada_ocupada.classList.add("cadeira_eu_ocupo");
+                            if(Number(objeto.chair) == 1){
+                                let spanStart_ocupada = document.getElementById(`spanStart_${objeto.room}`);
+                                spanStart_ocupada.style.visibility = "visible";
+                            }
+                        } else {
+                            cadeira_selecionada_ocupada.classList.add("alguem_ocupa");
+                        }
+                        break;
+                    case 'partida_inicializada':
+                        sessionStorage.setItem("room", objeto.room);
+                        sessionStorage.setItem("position", objeto.position);
+                        sessionStorage.setItem("mode", objeto.mode);
+                        setTimeout(() => window.location.href = 'game.html', 4000);
+                        const mensagem_partida_inicializada = '<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! <br> Sala: ' + objeto.room + ' <br> Posição: ' + objeto.position + ' <br> Modularidade de cartas: ' + objeto.mode + '</span>';
+                        exibe_mensagem(mensagem_partida_inicializada);
+                        const button_start = document.getElementById(`buttonStart_${objeto.room}`);
+                        button_start.style.visibility.hidden;
+                        break;
+                    case 'atualiza_disposicao_sala':
+                        for(let i=0; i<NUM_SALAS; i++){
+                            let nova_disposicao = objeto.ocupadas[i]?"none":"flex";
+                            document.getElementById(`divRoom_${i+1}`).style.display = nova_disposicao;
+                        }
+                        break;
+                    default:
+                        console.log(`Tipo de mensagem desconhecido: ${type}`);
+                }
+            });
+
+            socket.addEventListener('close', () => {
+                tentativas_conecatar = 10;
+                reconectar();
+            });
+        }
+
+        function reconectar(){
+            if(tentativas_conecatar-- > 0){
+                if(socket && socket.readyState === WebSocket.OPEN){ //falso positivo quando volta
+                    tentativas_conecatar = 10; //reseta as tentativas para a próxima vez
+                    exibe_mensagem("<font color='green'>Conectado</font>");
+                } else {
+                    if(tentativas_conecatar < 9){
+                        exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar... (${tentativas_conecatar})</font>`);
+                        connect(host);
+                    }
+                    setTimeout(reconectar, 4000);
+                }
+            } else { // perdeu a conexão consistentemente
+                window.location.href = 'index.html';
+            }
+        }
+        setTimeout(()=>connect(host), 100);
+        setTimeout(()=>connect(host), 200);
+        build_rooms();
+        reconectar();
     </script>
-     <script>
-         const NUM_SALAS = 3;
-         let sou_host_sala = false;
-         let tentativas_conecatar = 10;
-         let idTimeOutMensagem;
-         const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
-         let socket;
- 
-         function exibe_mensagem(msg){
-             clearTimeout(idTimeOutMensagem);
-             const campo_messagem = document.getElementById("message");
-             campo_messagem.innerHTML = msg;
-             campo_messagem.style.visibility = "visible";
-             idTimeOutMensagem = setTimeout(()=>{campo_messagem.innerHTML='<span style="visibility: hidden;">-</span>'; campo_messagem.style.visibility="hidden"}, 4000);
-         }
- 
-         function envia_mensagem_servidor(obj){
-             const string_mensagem = JSON.stringify(obj);
-             if(socket && socket.readyState === WebSocket.OPEN){
-                 socket.send(string_mensagem);
-             } else {
-                 exibe_mensagem("Erro de conexão");
-                 reconectar();
-             }
-         }
- 
-         function solicita_inicio_jogo(e){
-             const idButton = e.target.id;
-             const localizacao = idButton.split("_"); //elemento 1 é a sala, elemento 2 é a cadeira
-             envia_mensagem_servidor({
-                 type: "solicita_inicio_game",
-                 room: localizacao[1],
-                 page: "lobby"
-             });
-         }
- 
-         function solicita_cadeira(e){
-             const idButton = e.target.id;
-             const localizacao = idButton.split("_"); //elemento 1 é a sala, elemento 2 é a cadeira
-             envia_mensagem_servidor({
-                 type: "solicita_cadeira",
-                 room: localizacao[1],
-                 chair: localizacao[2],
-                 page: "lobby"
-             });
-         }
- 
-         function atualiza_todas_cadeiras(cadeiras, ocupadas){
-             console.log(cadeiras);
-             for(let i=1; i<=NUM_SALAS; i++){
-                 for(let j=1; j<=6; j++){
-                     let botao_atualizando = document.getElementById(`button_${i}_${j}`);
-                     botao_atualizando.classList.remove("eu_ocupo");
-                     if(cadeiras[i-1][j-1]){
-                         botao_atualizando.innerText = cadeiras[i-1][j-1];
-                         botao_atualizando.classList.remove("ninguem_ocupando");
-                         botao_atualizando.classList.add("alguem_ocupa");
-                     } else {
-                         botao_atualizando.innerText = "Livre";
-                         botao_atualizando.classList.add("ninguem_ocupando");
-                         botao_atualizando.classList.remove("alguem_ocupa");
-                     }
-                 }
-                 let nova_disposicao = ocupadas[i]?"hidden":"visible";
-                 let divAtualizada = document.getElementById(`divRoom_${i+1}`);
-                 if (divAtualizada)  divAtualizada.style.visibility = nova_disposicao;
-             }
-         }
- 
-         function build_rooms(){
-             const father = document.getElementById("container");
-             for(let i=1; i<=NUM_SALAS; i++){
-                 let newRoom = document.createElement('div');
-                 newRoom.id = `divRoom_${i}`;
-                 newRoom.classList.add("div_rooms");
-                 father.appendChild(newRoom);
-                 let newSpan = document.createElement('span');
-                 newRoom.appendChild(newSpan);
-                 newSpan.innerText = "Sala: " + i;
-                 newSpan.classList.add("titulo_sala");
- 
-                 newSpan = document.createElement('span');
-                 newRoom.appendChild(newSpan);
-                 for(let j=1; j<=6; j++){
-                     let newButton = document.createElement('button');
-                     newSpan.appendChild(newButton);
-                     newButton.innerText = `Livre`;
-                     newButton.classList.add("botao_comum");
-                     newButton.id = `button_${i}_${j}`;
-                     newButton.classList.add("ninguem_ocupando");
-                     newButton.addEventListener('click', solicita_cadeira);
-                 }
-                 newSpan = document.createElement('span');
-                 newRoom.appendChild(newSpan);
-                 newButton = document.createElement('button');
-                 newSpan.appendChild(newButton);
-                 newButton.innerText = `Inciar Jogo`;
-                 newButton.classList.add("botao_iniciar");
-                 newButton.id = `buttonStart_${i}`;
-                 newButton.addEventListener('click', solicita_inicio_jogo);
-                 newSpan.id = `spanStart_${i}`;
-                 newSpan.style.visibility = 'hidden';
-             }
-         }
- 
-         function desautenticado_para_pagina_login() {
-             const mensagem = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
-             exibe_mensagem(mensagem);
-             setTimeout(() => window.location.href = 'index.html', 4000);
-         }
- 
-         function connect(host) {
-             const token = sessionStorage.getItem('token');
-             if (!token || !host) { //o jogador precisa ter token e saber o host
-                 desautenticado_para_pagina_login();
-                 return;
-             }
- 
-             socket = new WebSocket(`ws://${host}:8080`);
-             socket.addEventListener('open', () => {
-                 console.log('Connected to the WebSocket server');
-                 envia_mensagem_servidor({ //padrão de envio de objetos
-                     type: "login",
-                     token: token,
-                     page: "lobby"
-                 });
-             });
- 
-             socket.addEventListener('message', (event) => {
-                 const objeto = JSON.parse(event.data);
-                 const type = objeto.type;
- 
-                 switch(type) {
-                     case 'Invalid token':
-                         alert("token existente errado");
-                         desautenticado_para_pagina_login();
-                         break;
-                     case 'atualiza_cadeiras':
-                         console.log(objeto.cadeiras);
-                         atualiza_todas_cadeiras(objeto.cadeiras, objeto.ocupadas);
-                         for(let i=0; i<NUM_SALAS; i++){
-                            let nova_disposicao = objeto.ocupadas[i]?"hidden":"visible";
-                            document.getElementById(`divRoom_${i+1}`).style.visibility = nova_disposicao;
-                         }
-                         break;
-                     case 'avisa_cadeira_ocupada':
-                         const display_message_ocupada = `Essa cadeira já está sendo ocupada por: <font color="red">${objeto.ocupante_atual}</red>`;
-                         exibe_mensagem(display_message_ocupada);
-                         break;
-                     case 'jogadores_insuficientes':
-                         const display_message_insuficientes = `É necessário ter o número suficiente de jogadores para iniciar a partida`;
-                         exibe_mensagem(display_message_insuficientes);
-                         break;
-                     case 'cadeira_liberada':
-                         console.log(`cadeira liberada da sala ${objeto.room} de numero ${objeto.chair} foi liberada`);
-                         let cadeira_selecionada_liberada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
-                         cadeira_selecionada_liberada.innerText = "Livre";
-                         cadeira_selecionada_liberada.classList.remove("cadeira_eu_ocupo");
-                         cadeira_selecionada_liberada.classList.remove("cadeira_ocupada");
-                         cadeira_selecionada_liberada.classList.remove("alguem_ocupa");
-                         cadeira_selecionada_liberada.classList.add("ninguem_ocupando");
-                         let spanStart = document.getElementById(`spanStart_${objeto.room}`);
-                         spanStart.style.visibility = "hidden";
-                         break;
-                     case 'cadeira_ocupada':
-                         console.log(`a cadeira da sala ${objeto.room} numero ${objeto.chair} está sendo ocupado por ${objeto.userNick}`);
-                         let cadeira_selecionada_ocupada = document.getElementById(`button_${objeto.room}_${objeto.chair}`);
-                         cadeira_selecionada_ocupada.innerText = objeto.userNick;
-                         cadeira_selecionada_ocupada.classList.remove("ninguem_ocupando");
-                         if(objeto.userNick === sessionStorage.getItem("user")){
-                             cadeira_selecionada_ocupada.classList.add("cadeira_eu_ocupo");
-                             if(Number(objeto.chair) == 1){
-                                 let spanStart_ocupada = document.getElementById(`spanStart_${objeto.room}`);
-                                 spanStart_ocupada.style.visibility = "visible";
-                             }
-                         } else {
-                             cadeira_selecionada_ocupada.classList.add("alguem_ocupa");
-                             
-                         }
-                         break;
-                     case 'partida_inicializada':
-                         sessionStorage.setItem("room", objeto.room);
-                         sessionStorage.setItem("position", objeto.position);
-                         sessionStorage.setItem("mode", objeto.mode);
-                         setTimeout(() => window.location.href = 'game.html', 4000);
-                         const mensagem_partida_inicializada = `<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! Sala: ${objeto.room}, Posição: ${objeto.position} na modularidade: (<strong style="color: yellow;"> ${objeto.mode} </strong>) cartas</span>`;
-                         exibe_mensagem(mensagem_partida_inicializada);
-                         const button_start = document.getElementById(`buttonStart_${objeto.room}`);
-                         button_start.style.visibility.hidden;
-                         break;
-                     case 'atualiza_disposicao_sala':
-                         for(let i=0; i<NUM_SALAS; i++){
-                             let nova_disposicao = objeto.ocupadas[i]?"hidden":"visible";
-                             document.getElementById(`divRoom_${i+1}`).style.visibility = nova_disposicao;
-                         }
-                         break;
-                     default:
-                         console.log(`Tipo de mensagem desconhecido: ${type}`);
-                 }
-             });
- 
-             socket.addEventListener('close', () => {
-                 tentativas_conecatar = 10;
-                 reconectar();
-             });
-         }
- 
-         function reconectar(){
-             if(tentativas_conecatar-- > 0){
-                 if(socket && socket.readyState === WebSocket.OPEN){
-                     tentativas_conecatar = 10; //reseta as tentativas para a próxima vez
-                     exibe_mensagem("<font color='green'>Conectado</font>");
-                 } else {
-                     if(tentativas_conecatar < 9){
-                         exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar (${tentativas_conecatar})</font>`);
-                         connect(host);
-                     }
-                     setTimeout(reconectar, 4000);
-                 }
-             } else { // perdeu a conecção consistentemente
-                 window.location.href = 'index.html';
-             }
-         }
- 
-         build_rooms();
-         connect(host);
-         setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
-     </script>
- </body>
- </html>
- 
+</body>
+</html>
