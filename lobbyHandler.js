@@ -30,14 +30,14 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                     let idSalaConfigurando = `room_${data.room}`;
                     jogos[idSalaConfigurando].mode = 10;
                     jogos[idSalaConfigurando].activite = true;
-                    salas_ocupadas[Number(data.room) - 1] = true;
+                    salas_ocupadas[Number(data.room) - 1] = true; //para torna-la indisponível no lobby 
                     for (let i = 0; i < jogadores_da_sala.length; i++) {
                         const jogador_sala = jogadores_da_sala[i];
                         if (conectados[jogador_sala]) {
                             let socket_novo_jogador = conectados[jogador_sala].socket;
-                            //conectados[jogador_sala].page = "game";
+                            conectados[jogador_sala].page = "game";
                             socket_novo_jogador.send(JSON.stringify({
-                                type: "partida_inicializada",
+                                type: "partida_inicializada", //o jogador é desconectado com esse comando, levantando da cadeira. A sala se torna ocupada
                                 room: data.room,
                                 position: i,
                                 mode: "10"
@@ -48,7 +48,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                             jogos[idSalaConfigurando][`player${i + 1}`] = configP; //configura o inicio das var dos jogos em ação
                         }
                     }
-                    aux.broadcastUsersLobby({ //ISSO DEVERIA SER SÓ PARA OS JOGADORES DO LOBBY
+                    aux.broadcastUsersLobby({
                         type: "atualiza_disposicao_sala",
                         ocupadas: salas_ocupadas
                     }, null, conectados);

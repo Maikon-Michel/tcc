@@ -228,11 +228,12 @@
                          sessionStorage.setItem("position", objeto.position);
                          sessionStorage.setItem("mode", objeto.mode);
                          setTimeout(() => window.location.href = 'game.html', 4000);
-                         const mensagem_partida_inicializada = `<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! Sala: ${objeto.room}, Posição: ${objeto.position} na modularidade <strong style="color: yellow;">${objeto.mode}</strong> cartas</span>`;
+                         const mensagem_partida_inicializada = `<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! Sala: ${objeto.room}, Posição: ${objeto.position} na modularidade: (<strong style="color: yellow;"> ${objeto.mode} </strong>) cartas</span>`;
                          exibe_mensagem(mensagem_partida_inicializada);
+                         const button_start = document.getElementById(`buttonStart_${objeto.room}`);
+                         button_start.style.visibility.hidden;
                          break;
                      case 'atualiza_disposicao_sala':
-                         console.log("estou na disposicao das salas: ");
                          for(let i=0; i<NUM_SALAS; i++){
                              let nova_disposicao = objeto.ocupadas[i]?"hidden":"visible";
                              document.getElementById(`divRoom_${i+1}`).style.visibility = nova_disposicao;

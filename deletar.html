@@ -1,0 +1,44 @@
+<script>
+function validarCPF(cpf) {
+    // Remove caracteres não numéricos
+    cpf = cpf.replace(/[^\d]+/g, '');
+
+    // Verifica se o CPF tem 11 dígitos
+    if (cpf.length !== 11) {
+        return false;
+    }
+
+    // Verifica se todos os dígitos são iguais
+    if (/^(\d)\1+$/.test(cpf)) {
+        return false;
+    }
+
+    // Calcula o primeiro dígito verificador
+    let soma = 0;
+    for (let i = 0; i < 9; i++) {
+        soma += parseInt(cpf.charAt(i)) * (10 - i);
+    }
+    let resto = 11 - (soma % 11);
+    let primeiroDigitoVerificador = (resto >= 10) ? 0 : resto;
+
+    // Calcula o segundo dígito verificador
+    soma = 0;
+    for (let i = 0; i < 10; i++) {
+        soma += parseInt(cpf.charAt(i)) * (11 - i);
+    }
+    resto = 11 - (soma % 11);
+    let segundoDigitoVerificador = (resto >= 10) ? 0 : resto;
+
+    // Verifica se os dígitos verificadores calculados conferem com os fornecidos
+    return (primeiroDigitoVerificador === parseInt(cpf.charAt(9)) && 
+            segundoDigitoVerificador === parseInt(cpf.charAt(10)));
+}
+
+// Exemplo de uso:
+let cpf = prompt("Por favor, insira seu CPF (apenas números):");
+if (validarCPF(cpf)) {
+    alert("O CPF é válido.");
+} else {
+    alert("O CPF é inválido.");
+}
+</script>

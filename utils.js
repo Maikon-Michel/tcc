@@ -85,19 +85,66 @@ class GameUtils {
         }
     }
 
-    async get_data_from_user(userNick, socket, db, conectados) {
-        try {
-            const snapshot = await db.ref(`users/${userNick}`).once('value');
-            const userData = snapshot.val();
-            if (userData) {
-                conectados[userNick] = {
-                    ...userData,
-                    socket: socket,
-                    page: "lobby"
-                };
+    async get_data_from_user(userNick, socket, db, conectados, em_desconexao) {
+        if (em_desconexao[userNick]) {
+            // Mover dados de volta para conectados
+            conectados[userNick] = em_desconexao[userNick].dados;
+            conectados[userNick].socket = socket; //atualiza para o socket atual
+            clearTimeout(em_desconexao[userNick].timer); // Cancelar o timer
+            delete em_desconexao[userNick];
+        } else { //se não há dados busca no banco
+            try {
+                const snapshot = await db.ref(`users/${userNick}`).once('value');
+                const userData = snapshot.val();
+                if (userData) {
+                    conectados[userNick] = {
+                        ...userData,
+                        socket: socket,
+                        page: "lobby"
+                    };
+                }
+            } catch (error) {
+                console.error('Erro ao buscar dados do usuário:', error);
             }
-        } catch (error) {
-            console.error('Erro ao buscar dados do usuário:', error);
+        }
+    }
+    search_player_in_games(player, jogos) {
+        for (let i = 0; i < this.NUM_SALAS; i++) {
+            for (let j = 0; j < 6; j++) {
+                if (player === jogos[`room_${i+1}`]?.[`player${j+1}`]?.name) { // ?. é a forma segura de verificar, retornando undefined inves do erro
+                    console.log("encontrado");
+                    return [i+1, j+1];
+                }
+            }
+        }
+        return null;
+    }
+    active_game_over_to_player(player, conectados, jogos, socket, local, salas_ocupadas){//expulsa o jogador da sala_jogo
+        if(!local){
+            local = this.search_player_in_games(player, jogos);
+        }
+        if(local){ //sala encontrada para expulsar o jogador
+            socket.send("game_over_lose");
+            jogos[`room_${local[0]}`][`player${local[1]}`] = null;
+            let count_players = 0;
+            let player_vencedor;
+            for(let i=1; i<=6; i++){
+                if(jogos[`room_${local[0]}`][`player${i}`]){
+                    count_players++;
+                    player_vencedor = i;
+                }
+            }
+            if(count_players == 1){ // se sobrou só um jogador, ele venceu
+                const userNickWinner = jogos[`room_${local[0]}`][`player${player_vencedor}`].name;
+                const socketWinner = conectados[userNickWinner].socket;
+                socketWinner.send("game_over_win");
+                salas_ocupadas[local[0] - 1] = false;
+                this.broadcastUsersLobby({
+                    type: "atualiza_disposicao_sala",
+                    ocupadas: salas_ocupadas
+                }, null, conectados);
+                //PREMIAR O JOGADOR VENCEDOR
+            }
         }
     }
 }
