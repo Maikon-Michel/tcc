@@ -20,7 +20,8 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                     aux.ocupando_cadeira(userNick, room, chair, cadeiras, conectados);
                 }
             }
-        } else if (data.type === "solicita_inicio_game") {
+        }
+        else if (data.type === "solicita_inicio_game") {
             if (cadeiras[data.room - 1][0] === userNick) {
                 let jogadores_da_sala = cadeiras[data.room - 1].filter(jogador => jogador !== null);
                 if (jogadores_da_sala.length < 2) {

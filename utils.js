@@ -124,7 +124,7 @@ class GameUtils {
             local = this.search_player_in_games(player, jogos);
         }
         if(local){ //sala encontrada para expulsar o jogador
-            socket.send("game_over_lose");
+            socket.send(JSON.stringify({type: "game_over_lose"}));
             jogos[`room_${local[0]}`][`player${local[1]}`] = null;
             let count_players = 0;
             let player_vencedor;
@@ -137,7 +137,7 @@ class GameUtils {
             if(count_players == 1){ // se sobrou só um jogador, ele venceu
                 const userNickWinner = jogos[`room_${local[0]}`][`player${player_vencedor}`].name;
                 const socketWinner = conectados[userNickWinner].socket;
-                socketWinner.send("game_over_win");
+                socketWinner.send(JSON.stringify({type: "game_over_win"}));
                 salas_ocupadas[local[0] - 1] = false;
                 this.broadcastUsersLobby({
                     type: "atualiza_disposicao_sala",

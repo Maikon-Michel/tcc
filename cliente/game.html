@@ -47,13 +47,12 @@
                     token: token,
                     page: "game"
                 });
-                envia_mensagem_servidor("verifique_se_estou_na_pagina_certa");
+                setTimeout(()=>envia_mensagem_servidor({type: "amIPlaying"}), 500);
             });
 
             socket.addEventListener('message', (event) => { //não usado ainda
-                //const objeto = JSON.parse(event.data);
-                const type = event.data;
-                switch (type) {
+                const objecto = JSON.parse(event.data);
+                switch (objecto.type) {
                     case 'Invalid token':
                         // Recebeu a negativa da autenticação ao entrar na página
                         alert("token existente errado");
@@ -73,41 +72,48 @@
                         alert("Que pena! Você perdeu a partida");
                         window.location.href = 'lobby.html';
                         break;
+                    case 'out_of_game':
+                        window.location.href = 'lobby.html';
+                        break;
                     default:
-                        console.log("tudo certo");
+                        console.log(type);
+                        console.log('out_of_game');
                         break;
                 }
 
             });
 
             socket.addEventListener('close', () => {
-                tentativas_conecatar = 10;
+                tentativas_conecatar = 12;
                 reconectar();
             });
         }
-        function reconectar() {
-            if (tentativas_conecatar-- > 0) {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    tentativas_conecatar = 10; //reseta as tentativas para a próxima vez
-                    //console.log("<font color='green'>Conectado");
+        function reconectar(){
+            if(tentativas_conecatar-- > 0){
+                if(socket && socket.readyState === WebSocket.OPEN){ //falso positivo quando volta
+                            tentativas_conecatar = 12; //reseta as tentativas para a próxima vez
+                            exibe_mensagem("<font color='green'>Conectado</font>");
+                            PingPong = false;
                 } else {
-                    if (tentativas_conecatar < 9) {
-                        console.log(`<font color="red">Problema na conexão! Tentando reconectar (${tentativas_conecatar})</font>`);
+                    if(tentativas_conecatar < 11){
+                        if (tentativas_conecatar < 10){
+                            exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar... (${tentativas_conecatar})</font>`);
+                        }
                         connect(host);
                     }
-                    setTimeout(reconectar, 4000);
+                    setTimeout(reconectar, (13 - tentativas_conecatar)*500);
                 }
-            } else { // perdeu a conecção consistentemente
-                window.location.href = 'index.html'
+            } else { // perdeu a conexão consistentemente
+                window.location.href = 'index.html';
             }
         }
         connect(host);
-        setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
+        setTimeout(reconectar, 100); //para testar a conexão ou tentar denovo
         document.getElementById('teste_envio').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
             envia_mensagem_servidor("estou ativo na sala do game");
         });
         document.getElementById('teste_derrota').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
-            envia_mensagem_servidor("teste_derrota");
+            envia_mensagem_servidor({type: "teste_derrota"});
         });
     </script>
 </body>

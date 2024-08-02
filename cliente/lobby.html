@@ -14,7 +14,7 @@
     <script>
         //declaração de variaveis
         const NUM_SALAS = 3;
-        let tentativas_conecatar = 10;
+        let tentativas_conecatar = 12;
         let idTimeOutMensagem;
         const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
         let socket;
@@ -214,7 +214,7 @@
             });
 
             socket.addEventListener('close', () => {
-                tentativas_conecatar = 10;
+                tentativas_conecatar = 12;
                 reconectar();
             });
         }
@@ -222,23 +222,26 @@
         function reconectar(){
             if(tentativas_conecatar-- > 0){
                 if(socket && socket.readyState === WebSocket.OPEN){ //falso positivo quando volta
-                    tentativas_conecatar = 10; //reseta as tentativas para a próxima vez
-                    exibe_mensagem("<font color='green'>Conectado</font>");
+                            tentativas_conecatar = 12; //reseta as tentativas para a próxima vez
+                            exibe_mensagem("<font color='green'>Conectado</font>");
+                            PingPong = false;
                 } else {
-                    if(tentativas_conecatar < 9){
-                        exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar... (${tentativas_conecatar})</font>`);
+                    if(tentativas_conecatar < 11){
+                        if (tentativas_conecatar < 10){
+                            exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar... (${tentativas_conecatar})</font>`);
+                        }
                         connect(host);
                     }
-                    setTimeout(reconectar, 4000);
+                    setTimeout(reconectar, (13 - tentativas_conecatar)*500);
                 }
             } else { // perdeu a conexão consistentemente
                 window.location.href = 'index.html';
             }
         }
-        setTimeout(()=>connect(host), 100);
+        setTimeout(()=>connect(host), 100); //GAMBIARRA A SER CORRIGIDA! por algum motivo a primeira atualização não funciona para quem volta do jogo
         setTimeout(()=>connect(host), 200);
         build_rooms();
-        reconectar();
+        setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
     </script>
 </body>
 </html>
