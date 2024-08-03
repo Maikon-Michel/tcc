@@ -89,6 +89,7 @@ class GameUtils {
         if (em_desconexao[userNick]) {
             // Mover dados de volta para conectados
             conectados[userNick] = em_desconexao[userNick].dados;
+            conectados[userNick].socket.close();
             conectados[userNick].socket = socket; //atualiza para o socket atual
             clearTimeout(em_desconexao[userNick].timer); // Cancelar o timer
             delete em_desconexao[userNick];

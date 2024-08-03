@@ -110,7 +110,7 @@
         connect(host);
         setTimeout(reconectar, 100); //para testar a conexão ou tentar denovo
         document.getElementById('teste_envio').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
-            envia_mensagem_servidor("estou ativo na sala do game");
+            envia_mensagem_servidor({type: "teste"});
         });
         document.getElementById('teste_derrota').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
             envia_mensagem_servidor({type: "teste_derrota"});

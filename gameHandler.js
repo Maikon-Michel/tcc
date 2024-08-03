@@ -6,9 +6,8 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
         msg = JSON.parse(message);
         // Adicione o código de tratamento da página de jogo em ação aqui
         switch(msg.type){
-            case 'verifique_se_estou_na_pagina_certa':
+            case 'teste':
                 console.log("pediu para verficar pagina certa");
-                
                 break;
             case 'teste_derrota':
                 console.log("pediu para verficar derrota");

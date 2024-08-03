@@ -48,7 +48,8 @@
             envia_mensagem_servidor({
                 type: "solicita_inicio_game",
                 room: localizacao[1],
-                page: "lobby"
+                page: "lobby",
+                mode: "3"
             });
         }
 
@@ -239,9 +240,9 @@
             }
         }
         setTimeout(()=>connect(host), 100); //GAMBIARRA A SER CORRIGIDA! por algum motivo a primeira atualização não funciona para quem volta do jogo
-        setTimeout(()=>connect(host), 200);
+        //setTimeout(()=>connect(host), 200);
         build_rooms();
-        setTimeout(reconectar, 300); //para testar a conexão ou tentar denovo
+        setTimeout(reconectar, 1000); //para testar a conexão ou tentar denovo
     </script>
 </body>
 </html>

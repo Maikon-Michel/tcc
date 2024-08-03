@@ -1,4 +1,16 @@
 module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas) {
+    function generateUniqueNumbers(num, max) {
+        let numbers = []; // Cria um array de números de 1 até max
+        for (let i = 0; i < max; i++) {
+            numbers.push(i);
+        }
+        for (let i = numbers.length - 1; i > 0; i--) { // Embaralha o array de números
+            const j = Math.floor(Math.random() * (i + 1));
+            [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+        }
+        return numbers.slice(0, num);  // Retorna os primeiros 'num' números do array embaralhado
+    }
+
     socket.send(JSON.stringify({
         type: "atualiza_cadeiras",
         cadeiras: cadeiras,
@@ -6,6 +18,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
     }));
     socket.on('message', (message) => {
         const data = JSON.parse(message);
+        console.log(data);
         if (data.type === "solicita_cadeira") {
             let room = Math.floor(Number(data.room));
             let chair = Math.floor(Number(data.chair));
@@ -22,14 +35,14 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
             }
         }
         else if (data.type === "solicita_inicio_game") {
-            if (cadeiras[data.room - 1][0] === userNick) {
+            if (cadeiras[data.room - 1][0] === userNick) { //VERIFICAR type.mode SE REALMENTE RECEBEU O NÚMERO
                 let jogadores_da_sala = cadeiras[data.room - 1].filter(jogador => jogador !== null);
                 if (jogadores_da_sala.length < 2) {
                     socket.send(JSON.stringify({ type: "jogadores_insuficientes" }));
                 } else { //o inicio do jogo foi aprovado para os jogadores "jogadores_da_sala"
                     aux.resetRoom(data.room, jogos);
                     let idSalaConfigurando = `room_${data.room}`;
-                    jogos[idSalaConfigurando].mode = 10;
+                    jogos[idSalaConfigurando].mode = Number(data.mode);
                     jogos[idSalaConfigurando].activite = true;
                     salas_ocupadas[Number(data.room) - 1] = true; //para torna-la indisponível no lobby 
                     for (let i = 0; i < jogadores_da_sala.length; i++) {
@@ -41,11 +54,13 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                                 type: "partida_inicializada", //o jogador é desconectado com esse comando, levantando da cadeira. A sala se torna ocupada
                                 room: data.room,
                                 position: i,
-                                mode: "10"
+                                mode: jogos[idSalaConfigurando].mode
                             }));
                             let configP = {};
                             configP.name = jogador_sala;
-                            configP.cards = conectados[jogador_sala].cards; //ISSO DEVE SER AJUSTADO DEPOIS DA IMPOLEMENTAÇÃO DA SALA "DECK"
+                            //o atributo cards tinha em ordem de preferencia as cartas do jogador. Manda para o jogo de acordo com as favoritas
+                            //configP.cards = conectados[jogador_sala].cards.slice(0, jogos[idSalaConfigurando].mode);
+                            configP.cards = generateUniqueNumbers(3, 11); //MUDAR PARA 133 DEPOIS // PARA O TCC NÃO HAVERÁ UM DECK. CARTAS NO ALEATÓRIO
                             jogos[idSalaConfigurando][`player${i + 1}`] = configP; //configura o inicio das var dos jogos em ação
                         }
                     }
