@@ -85,13 +85,19 @@ class GameUtils {
         }
     }
 
-    async get_data_from_user(userNick, socket, db, conectados, em_desconexao) {
+    async get_data_from_user(userNick, socket, db, conectados, em_desconexao, page, jogos) {
         if (em_desconexao[userNick]) {
             // Mover dados de volta para conectados
             conectados[userNick] = em_desconexao[userNick].dados;
             conectados[userNick].socket.close();
             conectados[userNick].socket = socket; //atualiza para o socket atual
-            clearTimeout(em_desconexao[userNick].timer); // Cancelar o timer
+            conectados[userNick].page = page; //concertado o bug do milênio
+            const wasInGame = this.search_player_in_games(userNick, jogos);
+            if(page != "lobby" || !wasInGame){
+                clearTimeout(em_desconexao[userNick].timer); // NÃO É PARA CANCELAR SE SAIU DO JOGO PARA LOBBY
+            } else{
+                console.log("caso especial")
+            }
             delete em_desconexao[userNick];
         } else { //se não há dados busca no banco
             try {
@@ -127,6 +133,7 @@ class GameUtils {
         if(local){ //sala encontrada para expulsar o jogador
             socket.send(JSON.stringify({type: "game_over_lose"}));
             jogos[`room_${local[0]}`][`player${local[1]}`] = null;
+            conectados[player].page = "lobby"; //nova página onde o jogador deve ficar
             let count_players = 0;
             let player_vencedor;
             for(let i=1; i<=6; i++){

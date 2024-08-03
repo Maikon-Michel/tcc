@@ -42,8 +42,8 @@ server.on('connection', (socket) => {
 
         socket.removeAllListeners('message'); // O jogador foi aprovado na autenticação e será redimensionado para outro tratamento
 
-        await aux.get_data_from_user(userNick, socket, db, conectados, em_desconexao); //await necessário para esperar a resposta do firebase antes de continuar
-        conectados[userNick].page = page; //concertado o bug do milênio
+        await aux.get_data_from_user(userNick, socket, db, conectados, em_desconexao, page, jogos); //await necessário para esperar a resposta do firebase antes de continuar
+
         if (page === "lobby") { 
             LobbyHandler.handleLobby(socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas);
         } else { 

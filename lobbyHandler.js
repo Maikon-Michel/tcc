@@ -50,17 +50,19 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                         if (conectados[jogador_sala]) {
                             let socket_novo_jogador = conectados[jogador_sala].socket;
                             conectados[jogador_sala].page = "game";
+                            cartas_selecionadas = generateUniqueNumbers(3, 12); //MUDAR PARA 133 DEPOIS // PARA O TCC NÃO HAVERÁ UM DECK. CARTAS NO ALEATÓRIO
                             socket_novo_jogador.send(JSON.stringify({
                                 type: "partida_inicializada", //o jogador é desconectado com esse comando, levantando da cadeira. A sala se torna ocupada
                                 room: data.room,
-                                position: i,
-                                mode: jogos[idSalaConfigurando].mode
+                                position: i+1,
+                                mode: jogos[idSalaConfigurando].mode,
+                                cartas: cartas_selecionadas
                             }));
                             let configP = {};
                             configP.name = jogador_sala;
                             //o atributo cards tinha em ordem de preferencia as cartas do jogador. Manda para o jogo de acordo com as favoritas
                             //configP.cards = conectados[jogador_sala].cards.slice(0, jogos[idSalaConfigurando].mode);
-                            configP.cards = generateUniqueNumbers(3, 11); //MUDAR PARA 133 DEPOIS // PARA O TCC NÃO HAVERÁ UM DECK. CARTAS NO ALEATÓRIO
+                            configP.cards = cartas_selecionadas;
                             jogos[idSalaConfigurando][`player${i + 1}`] = configP; //configura o inicio das var dos jogos em ação
                         }
                     }

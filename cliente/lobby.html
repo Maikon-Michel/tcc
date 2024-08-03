@@ -197,6 +197,7 @@
                         sessionStorage.setItem("room", objeto.room);
                         sessionStorage.setItem("position", objeto.position);
                         sessionStorage.setItem("mode", objeto.mode);
+                        sessionStorage.setItem("cartas", objeto.cartas);
                         setTimeout(() => window.location.href = 'game.html', 4000);
                         const mensagem_partida_inicializada = '<span style="background-color: darkgreen; color: lightgreen; text-align: center; border-radius: 5px;">Sua partida está sendo inicializada! <br> Sala: ' + objeto.room + ' <br> Posição: ' + objeto.position + ' <br> Modularidade de cartas: ' + objeto.mode + '</span>';
                         exibe_mensagem(mensagem_partida_inicializada);
@@ -240,7 +241,6 @@
             }
         }
         setTimeout(()=>connect(host), 100); //GAMBIARRA A SER CORRIGIDA! por algum motivo a primeira atualização não funciona para quem volta do jogo
-        //setTimeout(()=>connect(host), 200);
         build_rooms();
         setTimeout(reconectar, 1000); //para testar a conexão ou tentar denovo
     </script>

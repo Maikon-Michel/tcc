@@ -21,11 +21,19 @@
         function envia_mensagem_servidor(obj) {
             const string_mensagem = JSON.stringify(obj);
             if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(string_mensagem)
+                socket.send(string_mensagem);
             } else {
                 console.log("Erro de conexão");
                 reconectar();
             }
+        }
+        function add_listeners(){
+            document.getElementById('teste_envio').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
+            envia_mensagem_servidor({type: "teste"});
+            });
+            document.getElementById('teste_derrota').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
+                envia_mensagem_servidor({type: "teste_derrota"});
+            });
         }
         function desautenticado_para_pagina_login() {
             const mensagem = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
@@ -60,24 +68,23 @@
                         break;
                     case 'pagina_errada':
                         alert("voce esta na pagina errada"); //DELETAR
-                        setTimeout(()=> window.location.href = 'lobby.html', 4000);
+                        setTimeout(()=> window.location.href = 'lobby.html', 1000);
                         break;
-                    case 'game_over_win':
+                    case 'game_over_win': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de vitória
                         alert("Parabéns! Você venceu a partida");
-                        setTimeout(()=> window.location.href = 'lobby.html', 4000);
+                        setTimeout(()=> window.location.href = 'lobby.html', 2000);
                         break;
-                    case 'game_over_lose':
+                    case 'game_over_lose': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de derrota
                         alert("Que pena! Você perdeu a partida");
-                        window.location.href = 'lobby.html';
+                        setTimeout(()=> window.location.href = 'lobby.html', 1000);
                         break;
                     case 'out_of_game':
                         window.location.href = 'lobby.html';
                         break;
                     default:
                         console.log(type);
-                        console.log('out_of_game');
                         break;
                 }
 
@@ -107,14 +114,9 @@
                 window.location.href = 'index.html';
             }
         }
-        connect(host);
-        setTimeout(reconectar, 100); //para testar a conexão ou tentar denovo
-        document.getElementById('teste_envio').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
-            envia_mensagem_servidor({type: "teste"});
-        });
-        document.getElementById('teste_derrota').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
-            envia_mensagem_servidor({type: "teste_derrota"});
-        });
+        setTimeout(()=>connect(host), 100); //GAMBIARRA A SER CORRIGIDA! por algum motivo a primeira atualização não funciona para quem volta do jogo
+        setTimeout(reconectar, 1000); //para testar a conexão ou tentar denovo
+        add_listeners();
     </script>
 </body>
 
