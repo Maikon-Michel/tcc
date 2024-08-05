@@ -47,7 +47,7 @@ server.on('connection', (socket) => {
         if (page === "lobby") { 
             LobbyHandler.handleLobby(socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas);
         } else { 
-            GameHandler.handleGame(socket, userNick, jogos, conectados, aux, salas_ocupadas);
+            GameHandler.handleGame(socket, userNick, jogos, conectados, aux, salas_ocupadas, cadeiras);
         }
 
         socket.on('close', () => {

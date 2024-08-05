@@ -44,12 +44,15 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                     let idSalaConfigurando = `room_${data.room}`;
                     jogos[idSalaConfigurando].mode = Number(data.mode);
                     jogos[idSalaConfigurando].activite = true;
+                    jogos[idSalaConfigurando].turn = 0;
                     salas_ocupadas[Number(data.room) - 1] = true; //para torna-la indisponível no lobby 
                     for (let i = 0; i < jogadores_da_sala.length; i++) {
                         const jogador_sala = jogadores_da_sala[i];
                         if (conectados[jogador_sala]) {
                             let socket_novo_jogador = conectados[jogador_sala].socket;
                             conectados[jogador_sala].page = "game";
+                            conectados[jogador_sala].chair = i;
+                            conectados[jogador_sala].room = data.room;
                             cartas_selecionadas = generateUniqueNumbers(3, 12); //MUDAR PARA 133 DEPOIS // PARA O TCC NÃO HAVERÁ UM DECK. CARTAS NO ALEATÓRIO
                             socket_novo_jogador.send(JSON.stringify({
                                 type: "partida_inicializada", //o jogador é desconectado com esse comando, levantando da cadeira. A sala se torna ocupada

@@ -66,6 +66,7 @@ class GameUtils {
         dadosRoom.turn = 0;
         dadosRoom.activite = false;
         dadosRoom.mode = 5;
+        dadosRoom.timer = null;
         for (let i = 1; i <= 6; i++) {
             dadosRoom[`player${i}`] = null;
         }
@@ -119,7 +120,6 @@ class GameUtils {
         for (let i = 0; i < this.NUM_SALAS; i++) {
             for (let j = 0; j < 6; j++) {
                 if (player === jogos[`room_${i+1}`]?.[`player${j+1}`]?.name) { // ?. é a forma segura de verificar, retornando undefined inves do erro
-                    console.log("encontrado");
                     return [i+1, j+1];
                 }
             }
@@ -134,6 +134,9 @@ class GameUtils {
             socket.send(JSON.stringify({type: "game_over_lose"}));
             jogos[`room_${local[0]}`][`player${local[1]}`] = null;
             conectados[player].page = "lobby"; //nova página onde o jogador deve ficar
+            conectados[player].room = null; //nova página onde o jogador deve ficar
+            conectados[player].chair = null; //nova página onde o jogador deve ficar
+
             let count_players = 0;
             let player_vencedor;
             for(let i=1; i<=6; i++){

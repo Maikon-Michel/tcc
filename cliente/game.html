@@ -4,13 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/game.css">
     <title>Game Super Trunfo Sat</title>
 </head>
 
 <body>
+    <div id="message" class="message-hidden"><span>-</span></div> <!--Para exibir mensagens-->
     <div id="container">
         <button id="teste_envio">Testa envio</button> <!--DELETAR TESTE DE COMUNICAÇÃO-->
         <button id="teste_derrota">Clicou, perdeu</button> <!--DELETAR TESTE DE COMUNICAÇÃO-->
+        <div id="bnt_teste"></div>
     </div>
 
     <script>
@@ -27,14 +30,43 @@
                 reconectar();
             }
         }
+        function add_bnt_teste(){
+            pai = document.getElementById("bnt_teste");
+            for(let i =0; i<5; i++){
+                novoFilho = document.createElement('button');
+                novoFilho.value = i;
+                novoFilho.innerHTML = `Atributo ${i}`;
+                novoFilho.addEventListener('click', ()=>{
+                    envia_mensagem_servidor({
+                        type: "play",
+                        atributo: i
+                    });
+                });
+                pai.appendChild(novoFilho);
+            }
+        }
         function add_listeners(){
             document.getElementById('teste_envio').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
-            envia_mensagem_servidor({type: "teste"});
+            envia_mensagem_servidor({type: "play"});
             });
             document.getElementById('teste_derrota').addEventListener('click', ()=>{ //DELETAR, teste de comunicação
                 envia_mensagem_servidor({type: "teste_derrota"});
             });
         }
+
+        function exibe_mensagem(msg){ //duplo
+            clearTimeout(idTimeOutMensagem);
+            const campo_messagem = document.getElementById("message");
+            campo_messagem.innerHTML = msg;
+            campo_messagem.classList.remove("message-hidden");
+            campo_messagem.classList.add("message-visible");
+            idTimeOutMensagem = setTimeout(()=>{
+                campo_messagem.innerHTML='<span>-</span>';
+                campo_messagem.classList.remove("message-visible");
+                campo_messagem.classList.add("message-hidden");
+            }, 4000);
+        }
+
         function desautenticado_para_pagina_login() {
             const mensagem = "<p style='font-size: 24px; background-color: black; color: red; text-align: center;'>É necessário estar autenticado para jogar. Redirecionamento para página principal.</p>";
             console.log(mensagem);
@@ -67,24 +99,24 @@
                         desautenticado_para_pagina_login();
                         break;
                     case 'pagina_errada':
-                        alert("voce esta na pagina errada"); //DELETAR
+                        exibe_mensagem(`<font color="red">Você precisa escolher uma posição para iniciar uma partida...</font>`);
                         setTimeout(()=> window.location.href = 'lobby.html', 1000);
                         break;
                     case 'game_over_win': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de vitória
-                        alert("Parabéns! Você venceu a partida");
-                        setTimeout(()=> window.location.href = 'lobby.html', 2000);
+                        exibe_mensagem(`<font color="green">Parabéns! Você venceu a partida.</font>`);
+                        setTimeout(()=> window.location.href = 'lobby.html', 5000);
                         break;
                     case 'game_over_lose': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de derrota
-                        alert("Que pena! Você perdeu a partida");
-                        setTimeout(()=> window.location.href = 'lobby.html', 1000);
+                        exibe_mensagem(`<font color="red">Que pena! Você perdeu a partida</font>`);
+                        setTimeout(()=> window.location.href = 'lobby.html', 3000);
                         break;
                     case 'out_of_game':
                         window.location.href = 'lobby.html';
                         break;
                     default:
-                        console.log(type);
+                        console.log(objeto);
                         break;
                 }
 
@@ -106,6 +138,7 @@
                         if (tentativas_conecatar < 10){
                             exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar... (${tentativas_conecatar})</font>`);
                         }
+                        //socket.close();
                         connect(host);
                     }
                     setTimeout(reconectar, (13 - tentativas_conecatar)*500);
@@ -117,6 +150,7 @@
         setTimeout(()=>connect(host), 100); //GAMBIARRA A SER CORRIGIDA! por algum motivo a primeira atualização não funciona para quem volta do jogo
         setTimeout(reconectar, 1000); //para testar a conexão ou tentar denovo
         add_listeners();
+        add_bnt_teste();
     </script>
 </body>
 

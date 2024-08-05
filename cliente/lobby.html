@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="message" class="message-hidden"><span>-</span></div> <!--Para exibir mensagens-->
-    <div id="header"></div>
+    <div id="header">Jogo do trunfo (Satélites & Sensores)</div>
     <div id="container"></div>
 
     <script>
@@ -226,12 +226,12 @@
                 if(socket && socket.readyState === WebSocket.OPEN){ //falso positivo quando volta
                             tentativas_conecatar = 12; //reseta as tentativas para a próxima vez
                             exibe_mensagem("<font color='green'>Conectado</font>");
-                            PingPong = false;
                 } else {
                     if(tentativas_conecatar < 11){
                         if (tentativas_conecatar < 10){
                             exibe_mensagem(`<font color="red">Problema na conexão! Tentando reconectar... (${tentativas_conecatar})</font>`);
                         }
+                        //socket.close();
                         connect(host);
                     }
                     setTimeout(reconectar, (13 - tentativas_conecatar)*500);
