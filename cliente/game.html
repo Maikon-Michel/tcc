@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/game.css">
-    <title>Game Super Trunfo Sat</title>
+    <title>Super Trunfo Sat</title>
 </head>
 
 <body>
@@ -101,6 +101,13 @@
                     case 'pagina_errada':
                         exibe_mensagem(`<font color="red">Você precisa escolher uma posição para iniciar uma partida...</font>`);
                         setTimeout(()=> window.location.href = 'lobby.html', 1000);
+                        break;
+                    case 'carta_inicial':
+                        console.log(objecto.card);
+                        break;
+                    case 'change_turn':
+                        console.log(objecto.last);
+                        console.log(objecto.next);
                         break;
                     case 'game_over_win': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de vitória

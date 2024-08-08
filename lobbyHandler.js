@@ -45,6 +45,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                     jogos[idSalaConfigurando].mode = Number(data.mode);
                     jogos[idSalaConfigurando].activite = true;
                     jogos[idSalaConfigurando].turn = 0;
+                    jogos[idSalaConfigurando].socket = Array(6).fill(null);
                     salas_ocupadas[Number(data.room) - 1] = true; //para torna-la indisponível no lobby 
                     for (let i = 0; i < jogadores_da_sala.length; i++) {
                         const jogador_sala = jogadores_da_sala[i];
@@ -66,6 +67,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                             //o atributo cards tinha em ordem de preferencia as cartas do jogador. Manda para o jogo de acordo com as favoritas
                             //configP.cards = conectados[jogador_sala].cards.slice(0, jogos[idSalaConfigurando].mode);
                             configP.cards = cartas_selecionadas;
+                            configP.socket = null; //irá ser atualizado quando o jogador entrar na pagina do game
                             jogos[idSalaConfigurando][`player${i + 1}`] = configP; //configura o inicio das var dos jogos em ação
                         }
                     }
