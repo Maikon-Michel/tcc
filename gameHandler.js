@@ -3,14 +3,15 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
         socket.send(JSON.stringify({ type: msg }));
     }
 
-    function broadcast_troca_turno(antes, depois){
+    function broadcast_troca_turno(antes, depois, tam){
         for(let i=0; i<6; i++){
             socket_player_room = jogos[sala]?.socket[i];
             if (socket_player_room){
                 socket_player_room.send(JSON.stringify({
                     type: "change_turn",
                     last: antes,
-                    next: depois[i]
+                    next: depois[i],
+                    size: tam
                 }))
             }
         }
@@ -99,14 +100,17 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                 jogos[sala].turn++;
             } while(!jogos[sala][`player${jogos[sala].turn % 6+1}`] && jogos[sala].turn < 10000); //para pular as cadeiras vazias
             let cartas_turno_depois = [];
+            let cartas_tam = [];
             for(let i=1; i<=6; i++){
                 if(jogos[sala][`player${i}`]){
                     cartas_turno_depois.push(jogos[sala][`player${i}`].cards[0]);
+                    cartas_tam.push(jogos[sala][`player${i}`].cards.length);
                 } else {
                     cartas_turno_depois.push(null);
+                    cartas_tam.push(0);
                 }
             }
-            broadcast_troca_turno(cartas_turno_antes, cartas_turno_depois);
+            broadcast_troca_turno(cartas_turno_antes, cartas_turno_depois, cartas_tam);
         } else { //DELETAR. APENAS PARA VERIFICAR
             console.log('cliente solicitou jogada quando não era vez dele');
             //RESPONDE QUE NÃO É A VEZ DELE
