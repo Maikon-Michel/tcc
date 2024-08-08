@@ -12,6 +12,7 @@ const GameUtils = require('./utils'); // IMPORTA A CLASSE AUXILIAR
 // IMPORTA OS HANDLERS (tratamento persolisado à página que o jogador se encontra [lobby, game, deck])
 const LobbyHandler = require('./lobbyHandler');
 const GameHandler = require('./gameHandler');
+const { criaBaralho } = require('./cards');
 
 // INICIALIZA A CLASSE DE FUNÇÕES NECESSÁRIAS
 const aux = new GameUtils(NUM_SALAS, WebSocket);
@@ -22,6 +23,7 @@ let em_desconexao = {}; //retenção dos dados do jogador desconectado para o ca
 let cadeiras = [];  // interção com o lobby (sistema de ocupar cadeira e sala)
 let jogos = {}; // interação com as salas onde acontecem o jogos (todas variaveis de interação com cada jogo)
 let salas_ocupadas = [];
+const baralho = criaBaralho(); // Cria o baralho utilizando a função importada
 aux.inicializaControle(cadeiras, jogos, salas_ocupadas); // prepara estrutura de dados
 
 // INICIO DO CÓDIGO
@@ -47,7 +49,7 @@ server.on('connection', (socket) => {
         if (page === "lobby") { 
             LobbyHandler.handleLobby(socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas);
         } else { 
-            GameHandler.handleGame(socket, userNick, jogos, conectados, aux, salas_ocupadas, cadeiras);
+            GameHandler.handleGame(socket, userNick, jogos, conectados, aux, salas_ocupadas, baralho);
         }
 
         socket.on('close', () => {

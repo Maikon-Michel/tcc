@@ -133,9 +133,11 @@ class GameUtils {
         if(local){ //sala encontrada para expulsar o jogador
             socket.send(JSON.stringify({type: "game_over_lose"}));
             jogos[`room_${local[0]}`][`player${local[1]}`] = null;
-            conectados[player].page = "lobby"; //nova página onde o jogador deve ficar
-            conectados[player].room = null; //nova página onde o jogador deve ficar
-            conectados[player].chair = null; //nova página onde o jogador deve ficar
+            if(conectados[player]){
+                conectados[player].page = "lobby"; //nova página onde o jogador deve ficar
+                conectados[player].room = null; //nova página onde o jogador deve ficar
+                conectados[player].chair = null; //nova página onde o jogador deve ficar
+            }
 
             let count_players = 0;
             let player_vencedor;
@@ -147,14 +149,22 @@ class GameUtils {
             }
             if(count_players == 1){ // se sobrou só um jogador, ele venceu
                 const userNickWinner = jogos[`room_${local[0]}`][`player${player_vencedor}`].name;
-                const socketWinner = conectados[userNickWinner].socket;
-                socketWinner.send(JSON.stringify({type: "game_over_win"}));
+                const socketWinner = conectados[userNickWinner]?.socket;
+                if(socketWinner){
+                    socketWinner.send(JSON.stringify({type: "game_over_win"}));
+                }
                 salas_ocupadas[local[0] - 1] = false;
                 this.broadcastUsersLobby({
                     type: "atualiza_disposicao_sala",
                     ocupadas: salas_ocupadas
                 }, null, conectados);
                 //PREMIAR O JOGADOR VENCEDOR
+                //limpa os dados da sala (desocupando)
+                jogos[`room_${local[0]}`].turn = 0;
+                jogos[`room_${local[0]}`].activite = false;
+                for(let i=1;i<=6;i++){
+                    jogos[`room_${local[0]}`][`player${i}`] = null;
+                }
             }
         }
     }
