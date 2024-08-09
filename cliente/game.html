@@ -30,7 +30,7 @@
                 reconectar();
             }
         }
-        function add_bnt_teste(){
+        function add_bnt_teste(){ //DELETAR. APENAS TESTE
             pai = document.getElementById("bnt_teste");
             for(let i =0; i<5; i++){
                 novoFilho = document.createElement('button');
@@ -103,20 +103,27 @@
                         setTimeout(()=> window.location.href = 'lobby.html', 1000);
                         break;
                     case 'carta_inicial':
+                        console.log("objecto.cadeira");
+                        console.log(objecto.position);
+                        console.log("objecto.card (primeira carta):");
                         console.log(objecto.card);
                         break;
                     case 'change_turn':
                         console.log("objecto.last");
                         console.log(objecto.last);
+                        console.log("objecto.winner");
+                        console.log(objecto.winner);
                         console.log("objecto.next");
                         console.log(objecto.next);
                         console.log("objecto.size");
                         console.log(objecto.size);
+                        console.log("objecto.turn");
+                        console.log(objecto.turn);
                         break;
                     case 'game_over_win': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de vitória
                         exibe_mensagem(`<font color="green">Parabéns! Você venceu a partida.</font>`);
-                        setTimeout(()=> window.location.href = 'lobby.html', 5000);
+                        setTimeout(()=> window.location.href = 'lobby.html', 15000);
                         break;
                     case 'game_over_lose': //PRECISA DE DESENVOLVIMENTO
                         // Mensagem de derrota

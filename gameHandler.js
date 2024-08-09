@@ -3,7 +3,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
         socket.send(JSON.stringify({ type: msg }));
     }
 
-    function broadcast_troca_turno(antes, depois, tam){
+    function broadcast_troca_turno(antes, depois, tam, vencedor){
         for(let i=0; i<6; i++){
             socket_player_room = jogos[sala]?.socket[i];
             if (socket_player_room){
@@ -11,18 +11,28 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                     type: "change_turn",
                     last: antes,
                     next: depois[i],
-                    size: tam
+                    size: tam,
+                    turn: jogos[sala].turn,
+                    winner: vencedor
                 }))
             }
         }
     }
-    function revela_sua_carta_inical(){
+    function revela_sua_carta_inical(cadeira){
         const carta = jogos[sala][`player${Number(cadeira)+1}`]?.cards[0];
         if(carta){
-            socket.send(JSON.stringify({ type: "carta_inicial", card: carta }));
+            socket.send(JSON.stringify({
+                type: "carta_inicial",
+                card: carta,
+                position: cadeira
+            }));
         }
     }
-
+    function joga_automatico(){
+        if(jogos[sala].turn % 6 == cadeira){
+            console.log(`realizei jogada por omissão: ${cadeira}`)
+        }
+    }
     function compara_atributos(vet, invertido){ //TESTAR MAIS CASOS DE EMPATE
         if(invertido){
             for(let i=0; i<6; i++){
@@ -98,7 +108,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
             }
             do{ //atualiza turno
                 jogos[sala].turn++;
-            } while(!jogos[sala][`player${jogos[sala].turn % 6+1}`] && jogos[sala].turn < 10000); //para pular as cadeiras vazias
+            } while(!jogos[sala][`player${jogos[sala].turn % 6+1}`] && jogos[sala].turn < 2000); //para pular as cadeiras vazias
             let cartas_turno_depois = [];
             let cartas_tam = [];
             for(let i=1; i<=6; i++){
@@ -110,7 +120,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                     cartas_tam.push(0);
                 }
             }
-            broadcast_troca_turno(cartas_turno_antes, cartas_turno_depois, cartas_tam);
+            broadcast_troca_turno(cartas_turno_antes, cartas_turno_depois, cartas_tam, index_vencedor);
         } else { //DELETAR. APENAS PARA VERIFICAR
             console.log('cliente solicitou jogada quando não era vez dele');
             //RESPONDE QUE NÃO É A VEZ DELE
@@ -119,7 +129,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
     }
     const sala = `room_${conectados[userNick].room}`;
     const cadeira = conectados[userNick].chair;
-    if(cadeira != null) revela_sua_carta_inical(); //o jogo inicia revelando a carta.
+    if(cadeira != null) revela_sua_carta_inical(cadeira); //o jogo inicia revelando a carta.
     if (jogos[sala]?.socket[cadeira] !== undefined) jogos[sala].socket[cadeira] = socket;
     socket.on('message', (message) => {
         msg = JSON.parse(message);
