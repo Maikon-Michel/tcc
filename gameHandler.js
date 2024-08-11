@@ -10,7 +10,6 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
         if(jogos[sala].auxTimer + 2000 < agora && jogos[sala]?.turn % 6 === cadeira){
             jogos[sala].auxTimer = agora;
             make_a_move(Math.floor(Math.random() * 6) + 1);
-            console.log(hora);
         }
         if(jogos[sala][`player${Number(cadeira)+1}`]?.cards){
             timer = setTimeout(()=>{forca_jogada()},hora);
@@ -99,7 +98,9 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                 for(let i=1; i<=6; i++){ //recolhe as cartas de todos jogadores
                     if(jogos[sala][`player${i}`]?.cards){ //se o jogador está ativo (tendo cartas)
                         let carta_recolhida = jogos[sala][`player${i}`].cards.shift();
-                        cartas_recolhidas.push(carta_recolhida);
+                        if( i-1 !== index_vencedor || Math.random() > 1/4){ //destroi cartas as vezes para evitar deadLock na dinamica do game
+                            cartas_recolhidas.push(carta_recolhida);
+                        }
                         if(jogos[sala][`player${i}`].cards.length < 1 && index_vencedor + 1 != i){ //ocorreu o game over do jogador quando perde todas as cartas e não é o vencedor da rodada
                             let LoserName = jogos[sala][`player${i}`].name;
                             let LoserSocket = conectados[LoserName].socket;
@@ -108,7 +109,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                     }
                 }
                 if(jogos[sala][`player${index_vencedor + 1}`]?.cards){ //se for o caso do game over não deve executar porque as propriedades da sala foram resetadas
-                    jogos[sala][`player${index_vencedor + 1}`].cards.push(...cartas_recolhidas); //PLICAR UMA FUNÇÃO PARA REDUZIR LENTAMENTE AS CARTAS (para não causar um deadlock no jogo)
+                    jogos[sala][`player${index_vencedor + 1}`].cards.push(...cartas_recolhidas);
                 } 
             } else { // em caso de empate apenas embaralha as vezes
                 for(let i=1; i<=6; i++){
@@ -118,9 +119,10 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                     }
                 }
             }
-            do{ //atualiza turno
+            jogos[sala].turn++; //atualiza turno
+            while(!jogos[sala][`player${jogos[sala].turn % 6+1}`] && jogos[sala].turn < 2000){//para pular as cadeiras vazias
                 jogos[sala].turn++;
-            } while(!jogos[sala][`player${jogos[sala].turn % 6+1}`] && jogos[sala].turn < 2000); //para pular as cadeiras vazias
+            }
             let cartas_turno_depois = [];
             let cartas_tam = [];
             for(let i=1; i<=6; i++){

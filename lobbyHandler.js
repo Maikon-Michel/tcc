@@ -18,7 +18,6 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
     }));
     socket.on('message', (message) => {
         const data = JSON.parse(message);
-        console.log(data);
         if (data.type === "solicita_cadeira") {
             let room = Math.floor(Number(data.room));
             let chair = Math.floor(Number(data.chair));
@@ -55,7 +54,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                             conectados[jogador_sala].page = "game";
                             conectados[jogador_sala].chair = i;
                             conectados[jogador_sala].room = data.room;
-                            cartas_selecionadas = generateUniqueNumbers(3, 12); //MUDAR PARA 133 DEPOIS // PARA O TCC NÃO HAVERÁ UM DECK. CARTAS NO ALEATÓRIO
+                            cartas_selecionadas = generateUniqueNumbers(Number(data.mode), 133); //MUDAR PARA 133 DEPOIS // PARA O TCC NÃO HAVERÁ UM DECK. CARTAS NO ALEATÓRIO
                             socket_novo_jogador.send(JSON.stringify({
                                 type: "partida_inicializada", //o jogador é desconectado com esse comando, levantando da cadeira. A sala se torna ocupada
                                 room: data.room,

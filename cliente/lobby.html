@@ -49,7 +49,7 @@
                 type: "solicita_inicio_game",
                 room: localizacao[1],
                 page: "lobby",
-                mode: "3"
+                mode: "5"
             });
         }
 
@@ -148,7 +148,6 @@
             socket.addEventListener('message', (event) => {
                 const objeto = JSON.parse(event.data);
                 const type = objeto.type;
-                console.log(objeto);
                 switch(type) {
                     case 'Invalid token':
                         alert("token existente errado");

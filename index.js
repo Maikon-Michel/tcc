@@ -2,7 +2,7 @@
 
 // CONSTANTES
 const NUM_SALAS = 3;
-const SLICE = 12000;
+const SLICE = 6000;
 
 // CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
 const { host, app, db, jwt, port, JWT_SECRET, server, WebSocket } = require('./config');
