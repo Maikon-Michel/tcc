@@ -1,6 +1,16 @@
-module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, salas_ocupadas, baralho) {
+module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, salas_ocupadas, baralho, SLICE) {
     function s(msg) {
         socket.send(JSON.stringify({ type: msg }));
+    }
+
+    function forca_jogada(){
+        make_a_move(Math.floor(Math.random() * 6) + 1);
+        clearTimeout(timer);
+        let hora=  SLICE - Date.now()%SLICE;
+        console.log(hora);
+        if(jogos[sala][`player${Number(cadeira)+1}`]?.cards){
+            timer = setTimeout(()=>{forca_jogada()},hora);
+        }
     }
 
     function broadcast_troca_turno(antes, depois, tam, vencedor){
@@ -28,11 +38,8 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
             }));
         }
     }
-    function joga_automatico(){
-        if(jogos[sala].turn % 6 == cadeira){
-            console.log(`realizei jogada por omissão: ${cadeira}`)
-        }
-    }
+
+
     function compara_atributos(vet, invertido){ //TESTAR MAIS CASOS DE EMPATE
         if(invertido){
             for(let i=0; i<6; i++){
@@ -58,6 +65,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
             return index_melhor;
         }
     }
+
     function make_a_move(escolha) {
         if(jogos[sala].turn % 6 == cadeira){
             console.log('cliente solicitou jogada quando era vez dele');
@@ -129,6 +137,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
     }
     const sala = `room_${conectados[userNick].room}`;
     const cadeira = conectados[userNick].chair;
+    let timer = setTimeout(()=>{forca_jogada()}, 2*SLICE - Date.now()%SLICE);
     if(cadeira != null) revela_sua_carta_inical(cadeira); //o jogo inicia revelando a carta.
     if (jogos[sala]?.socket[cadeira] !== undefined) jogos[sala].socket[cadeira] = socket;
     socket.on('message', (message) => {

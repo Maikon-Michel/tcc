@@ -2,6 +2,7 @@
 
 // CONSTANTES
 const NUM_SALAS = 3;
+const SLICE = 12000;
 
 // CONFIGURAÇÕES: EXPRESS, MIDWARES, FIREBASE, WEBSOCKET, TOKEN (CRIPTOGRIA)
 const { host, app, db, jwt, port, JWT_SECRET, server, WebSocket } = require('./config');
@@ -49,7 +50,7 @@ server.on('connection', (socket) => {
         if (page === "lobby") { 
             LobbyHandler.handleLobby(socket, userNick, cadeiras, conectados, jogos, aux, NUM_SALAS, salas_ocupadas);
         } else { 
-            GameHandler.handleGame(socket, userNick, jogos, conectados, aux, salas_ocupadas, baralho);
+            GameHandler.handleGame(socket, userNick, jogos, conectados, aux, salas_ocupadas, baralho, SLICE);
         }
 
         socket.on('close', () => {

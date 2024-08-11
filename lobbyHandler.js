@@ -46,6 +46,7 @@ module.exports.handleLobby = function (socket, userNick, cadeiras, conectados, j
                     jogos[idSalaConfigurando].activite = true;
                     jogos[idSalaConfigurando].turn = 0;
                     jogos[idSalaConfigurando].socket = Array(6).fill(null);
+                    jogos[idSalaConfigurando].timer = null;
                     salas_ocupadas[Number(data.room) - 1] = true; //para torna-la indisponível no lobby 
                     for (let i = 0; i < jogadores_da_sala.length; i++) {
                         const jogador_sala = jogadores_da_sala[i];
