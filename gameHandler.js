@@ -4,10 +4,14 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
     }
 
     function forca_jogada(){
-        make_a_move(Math.floor(Math.random() * 6) + 1);
         clearTimeout(timer);
-        let hora=  SLICE - Date.now()%SLICE;
-        console.log(hora);
+        const agora = Date.now();
+        let hora = SLICE - agora % SLICE;
+        if(jogos[sala].auxTimer + 2000 < agora && jogos[sala]?.turn % 6 === cadeira){
+            jogos[sala].auxTimer = agora;
+            make_a_move(Math.floor(Math.random() * 6) + 1);
+            console.log(hora);
+        }
         if(jogos[sala][`player${Number(cadeira)+1}`]?.cards){
             timer = setTimeout(()=>{forca_jogada()},hora);
         }
@@ -67,7 +71,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
     }
 
     function make_a_move(escolha) {
-        if(jogos[sala].turn % 6 == cadeira){
+        if(jogos[sala]?.turn % 6 === cadeira){
             console.log('cliente solicitou jogada quando era vez dele');
             let atributo_escolhido;
             let invertido = false;
@@ -104,7 +108,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                     }
                 }
                 if(jogos[sala][`player${index_vencedor + 1}`]?.cards){ //se for o caso do game over não deve executar porque as propriedades da sala foram resetadas
-                    jogos[sala][`player${index_vencedor + 1}`].cards.push(...cartas_recolhidas);
+                    jogos[sala][`player${index_vencedor + 1}`].cards.push(...cartas_recolhidas); //PLICAR UMA FUNÇÃO PARA REDUZIR LENTAMENTE AS CARTAS (para não causar um deadlock no jogo)
                 } 
             } else { // em caso de empate apenas embaralha as vezes
                 for(let i=1; i<=6; i++){
@@ -137,6 +141,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
     }
     const sala = `room_${conectados[userNick].room}`;
     const cadeira = conectados[userNick].chair;
+    jogos[sala].auxTimer = 0; //auxliar para evitar the boucing
     let timer = setTimeout(()=>{forca_jogada()}, 2*SLICE - Date.now()%SLICE);
     if(cadeira != null) revela_sua_carta_inical(cadeira); //o jogo inicia revelando a carta.
     if (jogos[sala]?.socket[cadeira] !== undefined) jogos[sala].socket[cadeira] = socket;
