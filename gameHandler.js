@@ -98,7 +98,7 @@ module.exports.handleGame = function (socket, userNick, jogos, conectados, aux, 
                 for(let i=1; i<=6; i++){ //recolhe as cartas de todos jogadores
                     if(jogos[sala][`player${i}`]?.cards){ //se o jogador está ativo (tendo cartas)
                         let carta_recolhida = jogos[sala][`player${i}`].cards.shift();
-                        if( i-1 !== index_vencedor || Math.random() > 1/4){ //destroi cartas as vezes para evitar deadLock na dinamica do game
+                        if( i-1 !== index_vencedor || Math.random() > 1/2){ //destroi cartas as vezes para evitar deadLock na dinamica do game
                             cartas_recolhidas.push(carta_recolhida);
                         }
                         if(jogos[sala][`player${i}`].cards.length < 1 && index_vencedor + 1 != i){ //ocorreu o game over do jogador quando perde todas as cartas e não é o vencedor da rodada

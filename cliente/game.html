@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/game.css">
+    <script src = "js/cards.js"></script>
     <title>Super Trunfo Sat</title>
 </head>
 
@@ -17,8 +18,7 @@
     </div>
 
     <script>
-        //const { criaBaralho } = require('../cards');
-        //const baralho = criaBaralho();
+        const baralho = criaBaralho();
         let tentativas_conecatar = 10;
         let idTimeOutMensagem;
         const host = sessionStorage.getItem('ip_host'); //isso irá mudar na hospedagem real
