@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carta do Jogo</title>
+    <script src="js/cards.js"></script>
+    <style>
+        /* Estilos para a div principal da carta */
+        .carta {
+            position: absolute;
+            width: 30%;
+            height: 60%;
+            background-image: url('./img/background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 20px;
+        }
+
+        /* Estilos para a div interna que contém o conteúdo */
+        .conteudo {
+            width: 90%;
+            height: 87%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid white;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-sizing: border-box;
+            margin-top: 5%;
+        }
+
+        /* Divs internas que dividem o conteúdo */
+        .topo, .meio, .fundo {
+            width: 100%;
+        }
+
+        .topo {
+            height: 17%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #0052cc;
+            font-weight: bold;
+            font-family: 'Arial', sans-serif;
+            text-shadow: 
+                -1px -1px 0 #ffffff,  
+                 1px -1px 0 #ffffff,
+                -1px  1px 0 #ffffff,
+                 1px  1px 0 #ffffff,
+                 3px  3px 8px rgba(0, 0, 0, 0.5);
+            -webkit-text-stroke: 1px #ffffff;
+            font-size: calc(2vw + 1vh + 0.5vmin);
+        }
+
+        .meio {
+            height: 28%;
+            display: flex;
+        }
+
+        /* Divs internas dentro da seção meio */
+        .meio-esquerda, .meio-direita {
+            height: 100%;
+            width: 50%;
+        }
+
+        .meio-esquerda {
+            font-size: calc(0.8vw + 0.8vh);
+            color: rgba(255, 255, 255, 1);
+            padding: 3%;
+        }
+
+        .meio-direita {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .meio-direita img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: fill;
+        }
+
+        .fundo {
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin-top: 2%;
+        }
+
+        /* Divs internas dentro da seção fundo */
+        .fundo div {
+            height: calc((100% / 7) - 1.5%); /* Ajuste para compensar a margem */
+            display: flex;
+            align-items: center;
+            padding-left: 1%;
+            margin-bottom: 1.5%; /* Espaçamento entre as linhas */ 
+        }
+
+        .largura_de_faixa, .n_bandas, .intervalo_espectral, .resolucao_espacial, .quantizacao, .revisita, .distribuicao {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Divisões internas horizontais dentro de cada uma das 7 divs */
+        .largura_de_faixa div, .n_bandas div, .intervalo_espectral div, .resolucao_espacial div, .quantizacao div, .revisita div, .distribuicao div {
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .coluna1 {
+            width: 16%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 2%; /* Espaçamento entre as colunas */
+        }
+
+        .coluna1 img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: fill;
+        }
+
+        .coluna2 {
+            width: 47%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding-left: 5%;
+            background-color: rgba(173, 216, 230, 0.4); /* Fundo azul pálido */
+            margin-right: 2%; /* Espaçamento entre as colunas */
+            font-weight: bold; /* Texto em negrito */
+            font-size: calc(0.7vw + 0.7vh);
+        }
+
+        .coluna3 {
+            width: 35%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding-left: 5%;
+            background-color: rgba(173, 216, 230, 0.4); /* Fundo azul pálido */
+            font-size: calc(0.9vw + 0.9vh); /* Aumenta um pouco a fonte na coluna 3 */
+            font-size: calc(1.2vw + 1.2vh);
+        }
+
+        /* Estilos para o rodapé */
+        .rodape {
+            width: 100%;
+            height: 7%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .rodape img {
+            width: 100%;
+            height: 100%;
+            border-radius: 0 0 10px 10px;
+            display: block;
+            object-fit: fill;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <script>
+        // Função para criar uma carta
+        const baralho = criaBaralho();
+        function criarCarta(x, y, ind) {
+            // Cria a div principal da carta
+            const carta = document.createElement('div');
+            carta.classList.add('carta');
+            carta.style.left = `${x}px`;
+            carta.style.top = `${y}px`;
+
+            // Cria a div interna para o conteúdo
+            const conteudo = document.createElement('div');
+            conteudo.classList.add('conteudo');
+            
+            // Cria as três divs internas dentro de conteúdo
+            const topo = document.createElement('div');
+            topo.classList.add('topo');
+            topo.textContent = baralho[ind].nome;
+            
+            const meio = document.createElement('div');
+            meio.classList.add('meio');
+            
+            // Cria as divs internas da seção meio
+            const meioEsquerda = document.createElement('div');
+            meioEsquerda.classList.add('meio-esquerda');
+            meioEsquerda.innerHTML = `Lançamento: ${baralho[ind].anoLancamento}<br>Altitude: ${baralho[ind].altitudeKm} Km<br><br>Sensor: <strong>${baralho[ind].nomeSensor}</strong>`;
+            
+            const meioDireita = document.createElement('div');
+            meioDireita.classList.add('meio-direita');
+            const imgSat = document.createElement('img');
+            imgSat.src = "./img/satellite.jpg";
+            meioDireita.appendChild(imgSat);
+            
+            // Adiciona as divs internas à div meio
+            meio.appendChild(meioEsquerda);
+            meio.appendChild(meioDireita);
+            
+            const fundo = document.createElement('div');
+            fundo.classList.add('fundo');
+            
+            // Função para criar as 3 colunas dentro de cada linha
+            function criarLinhaComColunas(imgSrc, descricao, valor) {
+                const linha = document.createElement('div');
+                const coluna1 = document.createElement('div');
+                coluna1.classList.add('coluna1');
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                coluna1.appendChild(img);
+
+                const coluna2 = document.createElement('div');
+                coluna2.classList.add('coluna2');
+                coluna2.textContent = descricao;
+
+                const coluna3 = document.createElement('div');
+                coluna3.classList.add('coluna3');
+                coluna3.textContent = valor;
+
+                linha.appendChild(coluna1);
+                linha.appendChild(coluna2);
+                linha.appendChild(coluna3);
+
+                return linha;
+            }
+
+            // Cria as 7 divs internas dentro de fundo
+            const largura_de_faixa = criarLinhaComColunas("./img/larguraFaixa.jpg", "Largura de Faixa:", `${baralho[ind].larguraDeFaixaKm}`);
+            largura_de_faixa.classList.add('largura_de_faixa');
+
+            const n_bandas = criarLinhaComColunas("./img/nBandas.jpg", "Nº de Bandas:", `${baralho[ind].n_bandas}`);
+            n_bandas.classList.add('n_bandas');
+
+            const intervalo_espectral = criarLinhaComColunas("./img/intervaloEspectral.jpg", "Intervalo Espectral:", `${baralho[ind].intervaloEspectral}`);
+            intervalo_espectral.classList.add('intervalo_espectral');
+
+            const resolucao_espacial = criarLinhaComColunas("./img/resolucaoEspacial.jpg", "Resolução Espacial:", `${baralho[ind].resolucaoEspacial_m}`);
+            resolucao_espacial.classList.add('resolucao_espacial');
+
+            const quantizacao = criarLinhaComColunas("./img/quantizacao.jpg", "Quantização:", `${baralho[ind].quantizacao_bits}`);
+            quantizacao.classList.add('quantizacao');
+
+            const revisita = criarLinhaComColunas("./img/revisita.jpg", "Revisita:", `${baralho[ind].revisita_dias}`);
+            revisita.classList.add('revisita');
+
+            const distribuicao = criarLinhaComColunas("./img/distribuicao.jpg", "Distribuição:", `${baralho[ind].distribuicao}`);
+            distribuicao.classList.add('distribuicao');
+
+            // Adiciona as divs internas ao fundo
+            fundo.appendChild(largura_de_faixa);
+            fundo.appendChild(n_bandas);
+            fundo.appendChild(intervalo_espectral);
+            fundo.appendChild(resolucao_espacial);
+            fundo.appendChild(quantizacao);
+            fundo.appendChild(revisita);
+            fundo.appendChild(distribuicao);
+            
+            // Adiciona as divs internas à div conteudo
+            conteudo.appendChild(topo);
+            conteudo.appendChild(meio);
+            conteudo.appendChild(fundo);
+            
+            // Adiciona a div de conteúdo à carta
+            carta.appendChild(conteudo);
+
+            // Cria a div do rodapé e adiciona a imagem
+            const rodape = document.createElement('div');
+            rodape.classList.add('rodape');
+            const rodapeImg = document.createElement('img');
+            rodapeImg.src = "./img/rodape.jpg";
+            rodape.appendChild(rodapeImg);
+            carta.appendChild(rodape);
+
+            // Adiciona a carta ao container
+            document.getElementById('container').appendChild(carta);
+        }
+
+        criarCarta(100, 100, 17);
+    </script>
+</body>
+
+</html>
